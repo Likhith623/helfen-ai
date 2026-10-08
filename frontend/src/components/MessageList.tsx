@@ -306,46 +306,49 @@ function AnnotatedContent({
     )
   }
 
-  // Build segments with highlights
-  const segments: { text: string; annotation?: InlineAnnotation }[] = []
-  let lastIdx = 0
-
-  const sorted = [...annotations].sort((a, b) => a.start_offset - b.start_offset)
+  // Build a single markdown string with injected links for annotations
+  let mdString = content
+  // Sort descending by start_offset so insertions don't shift earlier offsets
+  const sorted = [...annotations].sort((a, b) => b.start_offset - a.start_offset)
 
   for (const ann of sorted) {
-    if (ann.start_offset > lastIdx) {
-      segments.push({ text: content.slice(lastIdx, ann.start_offset) })
-    }
-    segments.push({ text: content.slice(ann.start_offset, ann.end_offset), annotation: ann })
-    lastIdx = ann.end_offset
-  }
-  if (lastIdx < content.length) {
-    segments.push({ text: content.slice(lastIdx) })
+    const before = mdString.slice(0, ann.start_offset)
+    const after = mdString.slice(ann.end_offset)
+    const text = mdString.slice(ann.start_offset, ann.end_offset)
+    // We use a special href format to detect these during rendering
+    mdString = `${before}[${text}](#annotation:${ann.id})${after}`
   }
 
   return (
-    <div>
-      {segments.map((seg, i) =>
-        seg.annotation ? (
-          <span
-            key={i}
-            className="annotated-text"
-            onClick={() => onAnnotationClick(seg.annotation!)}
-            title="Click to view sub-chat"
-          >
-            {seg.text}
-            <span className="annotation-indicator">
-              {(seg.annotation.messages?.length || 0) > 0
-                ? seg.annotation.messages!.length
-                : '?'}
-            </span>
-          </span>
-        ) : (
-          <ReactMarkdown key={i} remarkPlugins={[remarkGfm]}>
-            {seg.text}
-          </ReactMarkdown>
-        )
-      )}
-    </div>
+    <ReactMarkdown
+      remarkPlugins={[remarkGfm]}
+      components={{
+        a: ({ node, href, children, ...props }) => {
+          if (href?.startsWith('#annotation:')) {
+            const annId = href.split(':')[1]
+            const ann = annotations.find(a => a.id === annId)
+            if (ann) {
+              return (
+                <span
+                  className="annotated-text"
+                  onClick={() => onAnnotationClick(ann)}
+                  title="Click to view sub-chat"
+                >
+                  {children}
+                  <span className="annotation-indicator">
+                    {(ann.messages?.length || 0) > 0
+                      ? ann.messages!.length
+                      : '?'}
+                  </span>
+                </span>
+              )
+            }
+          }
+          return <a href={href} {...props}>{children}</a>
+        }
+      }}
+    >
+      {mdString}
+    </ReactMarkdown>
   )
 }

@@ -145,17 +145,13 @@ export function InlineChatPopup({ annotation, anchorY, onClose }: Props) {
 
   return (
     <>
+
       <div 
-        style={{ position: 'fixed', inset: 0, zIndex: 90 }}
+        className="inline-chat-overlay"
         onClick={onClose}
       />
       <div 
-        className="inline-chat-popup"
-        style={{ 
-          top: anchorY, 
-          width: 400,
-          left: 'calc(50% - 200px + 140px)', // Centered but offset for sidebar
-        }}
+        className="inline-chat-popup glass-modal"
         onClick={e => e.stopPropagation()}
       >
         <div className="inline-chat-header">
@@ -199,10 +195,9 @@ export function InlineChatPopup({ annotation, anchorY, onClose }: Props) {
           <div ref={messagesEndRef} />
         </div>
 
-        <form onSubmit={handleSubmit} className="inline-chat-input-area">
+        <form onSubmit={handleSubmit} className="inline-chat-input">
           <input
             ref={inputRef}
-            className="inline-chat-input"
             value={input}
             onChange={e => setInput(e.target.value)}
             placeholder="Ask a question..."
