@@ -8,7 +8,7 @@ import { useAppStore } from '@/store/appStore'
 import { supabase } from '@/lib/supabase'
 import {
   Sun, Moon, Volume2, VolumeX, History,
-  Download, Edit, Sparkles
+  Download, Edit, Sparkles, Menu
 } from 'lucide-react'
 
 const SUGGESTIONS = [
@@ -19,7 +19,7 @@ const SUGGESTIONS = [
 
 export default function Home() {
   const {
-    theme, toggleTheme, sidebarOpen,
+    theme, toggleTheme, sidebarOpen, setSidebarOpen,
     activeConversationId, setMessages, messages,
     voiceEnabled, setVoiceEnabled, isTemporaryChat,
     setAnnotations
@@ -83,7 +83,16 @@ export default function Home() {
         {/* ── TOP BAR ── */}
         <header className="topbar fade-in">
           <div className="topbar-left">
-            {/* When sidebar is closed, nothing special needed — sidebar handles toggle */}
+            {/* Hamburger — only visible when sidebar is collapsed */}
+            {!sidebarOpen && (
+              <button
+                className="icon-btn"
+                onClick={() => setSidebarOpen(true)}
+                title="Open sidebar"
+              >
+                <Menu size={20} />
+              </button>
+            )}
             {isTemporaryChat && (
               <div className="topbar-badge">
                 <History size={13} />

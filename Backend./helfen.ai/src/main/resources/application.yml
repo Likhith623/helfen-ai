@@ -1,0 +1,45 @@
+spring:
+  application:
+    name: helfen-ai-backend
+  security:
+    oauth2:
+      resourceserver:
+        jwt:
+          jwk-set-uri: https://wmxweabwtyzatuhdajdi.supabase.co/auth/v1/.well-known/jwks.json
+
+  data:
+    redis:
+      host: localhost
+      port: 6379
+  rabbitmq:
+    host: localhost
+    port: 5672
+    username: helfen
+    password: helfen123
+    virtual-host: helfen_vhost
+
+# Supabase Auth configuration (using JWT validation)
+supabase:
+  url: https://wmxweabwtyzatuhdajdi.supabase.co
+  anon-key: sb_publishable_HEAAd2oXF8D5zibr8en-_w_f-VXvBaR
+  jwt:
+    jwks-url: https://wmxweabwtyzatuhdajdi.supabase.co/auth/v1/.well-known/jwks.json
+
+# Ollama local configuration
+ollama:
+  base-url: http://localhost:11434
+  model: llama3.2:3b
+
+# Cartesia configuration
+cartesia:
+  api-key: sk_car_mB9oWJGMxLRiPTwGguVtn3
+  base-url: https://api.cartesia.ai/tts/bytes
+
+server:
+  port: 8080
+
+# Logging
+logging:
+  level:
+    com.likhith.helfen.ai: DEBUG
+    org.springframework.web: INFO
