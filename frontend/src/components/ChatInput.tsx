@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useRef, useEffect } from 'react'
-import { Send, Image as ImageIcon, Mic, StopCircle } from 'lucide-react'
+import { Send, Mic, StopCircle, ChevronDown, Plus } from 'lucide-react'
 import { useAppStore } from '@/store/appStore'
 import { supabase } from '@/lib/supabase'
 
@@ -9,27 +9,30 @@ export function ChatInput() {
   const [input, setInput] = useState('')
   const [isRecording, setIsRecording] = useState(false)
   const textareaRef = useRef<HTMLTextAreaElement>(null)
-  const { 
-    isStreaming, 
-    setIsStreaming, 
-    addMessage, 
-    activeConversationId,
-    setActiveConversationId,
-    messages,
-    selectedModel,
-    isTemporaryChat,
-    setStreamingMessageId,
-    updateMessage,
-    addConversation
+
+  const {
+    isStreaming, setIsStreaming,
+    addMessage, activeConversationId, setActiveConversationId,
+    messages, selectedModel, isTemporaryChat,
+    setStreamingMessageId, updateMessage, addConversation
   } = useAppStore()
 
-  // Auto-resize textarea
+  /* Auto-resize textarea */
   useEffect(() => {
-    if (textareaRef.current) {
-      textareaRef.current.style.height = '24px'
-      textareaRef.current.style.height = `${Math.min(textareaRef.current.scrollHeight, 200)}px`
-    }
+    const el = textareaRef.current
+    if (!el) return
+    el.style.height = '24px'
+    el.style.height = `${Math.min(el.scrollHeight, 200)}px`
   }, [input])
+
+  /* Let suggestion chips set textarea value via DOM event */
+  useEffect(() => {
+    const el = textareaRef.current
+    if (!el) return
+    const handler = (e: Event) => setInput((e.target as HTMLTextAreaElement).value)
+    el.addEventListener('input', handler)
+    return () => el.removeEventListener('input', handler)
+  }, [])
 
   async function handleSubmit(e?: React.FormEvent) {
     e?.preventDefault()
@@ -41,24 +44,22 @@ export function ChatInput() {
 
     let convId = activeConversationId
 
-    // Create new conversation if needed
+    /* Create conversation in DB if needed */
     if (!convId && !isTemporaryChat) {
       const { data: { user } } = await supabase.auth.getUser()
       if (user) {
         const { data } = await supabase.from('conversations').insert({
           user_id: user.id,
-          title: content.slice(0, 40) + (content.length > 40 ? '...' : ''),
+          title: content.slice(0, 40) + (content.length > 40 ? '…' : ''),
           model: selectedModel,
           is_temporary: false
         }).select().single()
-        
         if (data) {
           convId = data.id
           addConversation(data as any)
           setActiveConversationId(data.id)
         }
       } else {
-        // Fallback to temp if not logged in
         useAppStore.getState().setIsTemporaryChat(true)
       }
     }
@@ -73,34 +74,34 @@ export function ChatInput() {
     }
     addMessage(userMsg)
 
-    // Save to DB
     if (convId && !isTemporaryChat) {
       supabase.from('messages').insert({
-        id: userMsgId,
-        conversation_id: convId,
-        role: 'user',
-        content
+        id: userMsgId, conversation_id: convId, role: 'user', content
       }).then()
     }
 
     const aiMsgId = crypto.randomUUID()
-    const aiMsg = {
+    addMessage({
       id: aiMsgId,
       conversation_id: convId || 'temp',
       role: 'assistant' as const,
       content: '',
       model: selectedModel,
       created_at: new Date().toISOString()
-    }
-    
-    addMessage(aiMsg)
+    })
     setStreamingMessageId(aiMsgId)
     setIsStreaming(true)
 
     try {
-      const res = await fetch('/api/chat', {
+      const { data: sessionData } = await supabase.auth.getSession()
+      const token = sessionData?.session?.access_token
+
+      const res = await fetch('http://localhost:8080/api/v1/chat', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          ...(token ? { 'Authorization': `Bearer ${token}` } : {})
+        },
         body: JSON.stringify({
           conversationId: convId,
           messages: [...messages, userMsg],
@@ -109,10 +110,10 @@ export function ChatInput() {
         })
       })
 
-      if (!res.ok) throw new Error('Failed to fetch response')
+      if (!res.ok) throw new Error('API error')
 
       const reader = res.body?.getReader()
-      if (!reader) throw new Error('No reader available')
+      if (!reader) throw new Error('No stream')
 
       const decoder = new TextDecoder()
       let fullContent = ''
@@ -120,35 +121,29 @@ export function ChatInput() {
       while (true) {
         const { done, value } = await reader.read()
         if (done) break
-
         const chunk = decoder.decode(value)
-        const lines = chunk.split('\n').filter(Boolean)
-
-        for (const line of lines) {
+        for (const line of chunk.split('\n').filter(Boolean)) {
           if (line.startsWith('data: ')) {
-            const data = JSON.parse(line.slice(6))
-            if (data.content) {
-              fullContent += data.content
-              updateMessage(aiMsgId, { content: fullContent })
-            }
+            try {
+              const parsed = JSON.parse(line.slice(6))
+              if (parsed.content) {
+                fullContent += parsed.content
+                updateMessage(aiMsgId, { content: fullContent })
+              }
+            } catch { /* ignore parse errors */ }
           }
         }
       }
 
-      // Save AI message to DB
       if (convId && !isTemporaryChat) {
         supabase.from('messages').insert({
-          id: aiMsgId,
-          conversation_id: convId,
-          role: 'assistant',
-          content: fullContent,
-          model: selectedModel
+          id: aiMsgId, conversation_id: convId,
+          role: 'assistant', content: fullContent, model: selectedModel
         }).then()
       }
-
-    } catch (error) {
-      console.error(error)
-      updateMessage(aiMsgId, { content: 'Sorry, I encountered an error.' })
+    } catch (err) {
+      console.error(err)
+      updateMessage(aiMsgId, { content: 'Sorry, something went wrong. Please try again.' })
     } finally {
       setIsStreaming(false)
       setStreamingMessageId(null)
@@ -163,62 +158,75 @@ export function ChatInput() {
   }
 
   return (
-    <div className="input-area fade-in">
-      <div className="input-wrapper">
-        <form onSubmit={handleSubmit} className="input-container">
-          <button type="button" className="icon-btn" title="Upload image">
-            <ImageIcon size={20} />
-          </button>
-          
-          <textarea
-            ref={textareaRef}
-            className="chat-textarea"
-            value={input}
-            onChange={e => setInput(e.target.value)}
-            onKeyDown={handleKeyDown}
-            placeholder="Ask Helfen AI anything..."
-            rows={1}
-            disabled={isStreaming}
-          />
-          
-          <div className="input-actions">
-            {isRecording ? (
-              <div className="voice-recording">
-                <div className="voice-pulse" />
-                Listening...
-                <button 
-                  type="button" 
-                  className="icon-btn" 
-                  style={{ width: 24, height: 24, color: 'var(--accent-red)' }}
-                  onClick={() => setIsRecording(false)}
+    <div className="input-area">
+      <div className="input-area-inner">
+        {/* Glowing coloured border on focus */}
+        <div className="input-glow-wrapper">
+          <form onSubmit={handleSubmit}>
+            <div className="input-box">
+              {/* Plus / attach button */}
+              <button type="button" className="icon-btn" title="Attach" style={{ flexShrink: 0, marginBottom: 0 }}>
+                <Plus size={18} />
+              </button>
+
+              <textarea
+                ref={textareaRef}
+                className="chat-textarea"
+                value={input}
+                onChange={e => setInput(e.target.value)}
+                onKeyDown={handleKeyDown}
+                placeholder="Ask Helfen AI"
+                rows={1}
+                disabled={isStreaming}
+              />
+
+              <div className="input-actions">
+                {/* Model pill — like Gemini's "Flash ▾" */}
+                <button type="button" className="model-pill" title="Change model">
+                  Flash <ChevronDown size={13} />
+                </button>
+
+                {/* Mic */}
+                {isRecording ? (
+                  <div className="voice-recording">
+                    <div className="voice-pulse" />
+                    <button
+                      type="button"
+                      className="icon-btn"
+                      onClick={() => setIsRecording(false)}
+                      style={{ width: 32, height: 32 }}
+                    >
+                      <StopCircle size={16} />
+                    </button>
+                  </div>
+                ) : (
+                  <button
+                    type="button"
+                    className="icon-btn"
+                    title="Use microphone"
+                    onClick={() => setIsRecording(true)}
+                    disabled={isStreaming}
+                  >
+                    <Mic size={18} />
+                  </button>
+                )}
+
+                {/* Send */}
+                <button
+                  type="submit"
+                  className={`send-btn ${input.trim() && !isStreaming ? 'active' : ''}`}
+                  disabled={!input.trim() || isStreaming}
+                  title="Send"
                 >
-                  <StopCircle size={16} />
+                  <Send size={16} />
                 </button>
               </div>
-            ) : (
-              <button 
-                type="button" 
-                className="icon-btn" 
-                title="Use microphone"
-                onClick={() => setIsRecording(true)}
-                disabled={isStreaming}
-              >
-                <Mic size={20} />
-              </button>
-            )}
-            
-            <button 
-              type="submit" 
-              className={`send-btn ${input.trim() && !isStreaming ? 'active' : ''}`}
-              disabled={!input.trim() || isStreaming}
-              title="Send message"
-            >
-              <Send size={18} />
-            </button>
-          </div>
-        </form>
+            </div>
+          </form>
+        </div>
+
         <div className="input-hint">
-          Helfen AI can make mistakes. Check important info. Select text to ask inline questions.
+          Helfen AI can make mistakes. Select text in any response to ask inline questions.
         </div>
       </div>
     </div>

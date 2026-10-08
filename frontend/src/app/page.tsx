@@ -7,176 +7,157 @@ import { ChatInput } from '@/components/ChatInput'
 import { useAppStore } from '@/store/appStore'
 import { supabase } from '@/lib/supabase'
 import {
-  Menu, Sun, Moon, Volume2, VolumeX, History,
-  ChevronDown, Code, PenTool, Lightbulb, GraduationCap, Sparkles
+  Sun, Moon, Volume2, VolumeX, History,
+  Download, Edit, Sparkles
 } from 'lucide-react'
+
+const SUGGESTIONS = [
+  { icon: '✏️', label: 'Design a book cover for my life story' },
+  { icon: '🌿', label: 'Explain how photosynthesis works' },
+  { icon: '🪑', label: 'Restore an old wooden table' },
+]
 
 export default function Home() {
   const {
-    theme, toggleTheme, sidebarOpen, setSidebarOpen,
+    theme, toggleTheme, sidebarOpen,
     activeConversationId, setMessages, messages,
-    selectedModel, setSelectedModel, voiceEnabled, setVoiceEnabled,
-    isTemporaryChat
+    voiceEnabled, setVoiceEnabled, isTemporaryChat,
+    setAnnotations
   } = useAppStore()
 
-  // Load messages for active conversation
+  /* Load messages for active conversation */
   useEffect(() => {
-    if (!activeConversationId) {
-      setMessages([])
-      return
-    }
+    if (!activeConversationId) { setMessages([]); return }
 
-    const loadMessages = async () => {
+    const load = async () => {
       const { data } = await supabase
         .from('messages')
         .select('*')
         .eq('conversation_id', activeConversationId)
         .order('created_at', { ascending: true })
 
-      if (data) {
-        // Also fetch annotations
-        const { data: annData } = await supabase
-          .from('inline_annotations')
-          .select('*, inline_messages(*)')
-          .eq('conversation_id', activeConversationId)
+      if (!data) return
 
-        if (annData) {
-          const annMap: Record<string, any[]> = {}
-          for (const ann of annData) {
-            if (!annMap[ann.message_id]) annMap[ann.message_id] = []
-            // Sort messages
-            if (ann.inline_messages) {
-              ann.inline_messages.sort((a: any, b: any) => 
-                new Date(a.created_at).getTime() - new Date(b.created_at).getTime()
-              )
-            }
-            annMap[ann.message_id].push({ ...ann, messages: ann.inline_messages })
-          }
-          
-          for (const msgId in annMap) {
-            useAppStore.getState().setAnnotations(msgId, annMap[msgId])
-          }
+      const { data: annData } = await supabase
+        .from('inline_annotations')
+        .select('*, inline_messages(*)')
+        .eq('conversation_id', activeConversationId)
+
+      if (annData) {
+        const annMap: Record<string, any[]> = {}
+        for (const ann of annData) {
+          if (!annMap[ann.message_id]) annMap[ann.message_id] = []
+          if (ann.inline_messages)
+            ann.inline_messages.sort((a: any, b: any) =>
+              new Date(a.created_at).getTime() - new Date(b.created_at).getTime())
+          annMap[ann.message_id].push({ ...ann, messages: ann.inline_messages })
         }
-
-        setMessages(data as any)
+        for (const msgId in annMap) setAnnotations(msgId, annMap[msgId])
       }
-    }
-    loadMessages()
 
-    // Realtime subscription
-    const sub = supabase.channel(`messages:${activeConversationId}`)
+      setMessages(data as any)
+    }
+    load()
+
+    const sub = supabase.channel(`msgs:${activeConversationId}`)
       .on('postgres_changes', {
-        event: 'INSERT',
-        schema: 'public',
-        table: 'messages',
+        event: 'INSERT', schema: 'public', table: 'messages',
         filter: `conversation_id=eq.${activeConversationId}`
       }, payload => {
-        // Only add if not already locally added (avoids duplicates for own messages)
-        const currentMsgs = useAppStore.getState().messages
-        if (!currentMsgs.find(m => m.id === payload.new.id)) {
+        const cur = useAppStore.getState().messages
+        if (!cur.find(m => m.id === payload.new.id))
           useAppStore.getState().addMessage(payload.new as any)
-        }
       })
       .subscribe()
 
     return () => { supabase.removeChannel(sub) }
   }, [activeConversationId])
 
+  const isEmpty = messages.length === 0
+
   return (
     <div className="app-container">
       <Sidebar />
 
       <main className="chat-area">
+        {/* ── TOP BAR ── */}
         <header className="topbar fade-in">
           <div className="topbar-left">
-            {!sidebarOpen && (
-              <button 
-                className="sidebar-menu-btn" 
-                onClick={() => setSidebarOpen(true)}
-              >
-                <Menu size={20} />
-              </button>
-            )}
-            
-            <div className="model-selector">
-              Helfen AI
-              <ChevronDown size={14} style={{ color: 'var(--text-muted)' }} />
-            </div>
-
+            {/* When sidebar is closed, nothing special needed — sidebar handles toggle */}
             {isTemporaryChat && (
-              <div className="temporary-badge">
-                <History size={14} />
+              <div className="topbar-badge">
+                <History size={13} />
                 Temporary chat
               </div>
             )}
           </div>
 
           <div className="topbar-right">
-            <button 
-              className="icon-btn" 
+            <button className="get-app-btn" title="Get the app">
+              <Download size={14} />
+              Get app
+            </button>
+
+            <button
+              className="icon-btn"
               onClick={() => setVoiceEnabled(!voiceEnabled)}
-              title={voiceEnabled ? "Voice output enabled" : "Voice output disabled"}
+              title={voiceEnabled ? 'Voice on' : 'Voice off'}
             >
-              {voiceEnabled ? <Volume2 size={20} /> : <VolumeX size={20} />}
+              {voiceEnabled ? <Volume2 size={18} /> : <VolumeX size={18} />}
             </button>
+
             <button className="icon-btn" onClick={toggleTheme} title="Toggle theme">
-              {theme === 'dark' ? <Sun size={20} /> : <Moon size={20} />}
+              {theme === 'dark' ? <Sun size={18} /> : <Moon size={18} />}
             </button>
-            <div className="user-avatar" title="Account settings">
-              L
-            </div>
+
+            <button className="icon-btn" title="New chat" onClick={() => {
+              useAppStore.getState().setActiveConversationId(null)
+              useAppStore.getState().setMessages([])
+            }}>
+              <Edit size={18} />
+            </button>
+
+            <button className="user-avatar-btn" title="Account">L</button>
           </div>
         </header>
 
-        {messages.length === 0 ? (
+        {/* ── WELCOME / MESSAGES ── */}
+        {isEmpty ? (
           <div className="welcome-screen fade-in">
-            <div className="gemini-logo welcome-logo">
-              <Sparkles className="text-white" size={32} />
-            </div>
-            <h1 className="welcome-title">Hello, Likhith</h1>
-            <p className="welcome-subtitle">
-              Select any text in my answers to ask specific questions, hear it spoken, or translate it.
-            </p>
+            {/* Colourful glow blobs */}
+            <div className="welcome-glow" />
+            <div className="welcome-glow-ring" />
 
-            <div className="suggestions-grid">
-              <div className="suggestion-card">
-                <div className="suggestion-icon" style={{ background: 'rgba(234, 67, 53, 0.1)', color: '#ea4335' }}>
-                  <PenTool size={18} />
-                </div>
-                <div className="suggestion-text">
-                  Help me draft an email to a recruiter for a software engineering role
-                </div>
-              </div>
-              <div className="suggestion-card">
-                <div className="suggestion-icon" style={{ background: 'rgba(52, 168, 83, 0.1)', color: '#34a853' }}>
-                  <Code size={18} />
-                </div>
-                <div className="suggestion-text">
-                  Explain how React Server Components work under the hood
-                </div>
-              </div>
-              <div className="suggestion-card">
-                <div className="suggestion-icon" style={{ background: 'rgba(251, 188, 5, 0.1)', color: '#fbbc05' }}>
-                  <Lightbulb size={18} />
-                </div>
-                <div className="suggestion-text">
-                  Brainstorm 5 unique features for a language learning app
-                </div>
-              </div>
-              <div className="suggestion-card">
-                <div className="suggestion-icon" style={{ background: 'rgba(66, 133, 244, 0.1)', color: '#4285f4' }}>
-                  <GraduationCap size={18} />
-                </div>
-                <div className="suggestion-text">
-                  Explain quantum computing to a high school student
-                </div>
-              </div>
+            <h1 className="welcome-heading">Where should we start?</h1>
+
+            {/* Input box rendered at bottom via absolute positioning */}
+
+            {/* Suggestion chips */}
+            <div className="welcome-suggestions">
+              {SUGGESTIONS.map((s, i) => (
+                <button
+                  key={i}
+                  className="suggestion-chip"
+                  onClick={() => {
+                    const ta = document.querySelector<HTMLTextAreaElement>('.chat-textarea')
+                    if (ta) {
+                      ta.value = s.label
+                      ta.dispatchEvent(new Event('input', { bubbles: true }))
+                      ta.focus()
+                    }
+                  }}
+                >
+                  <span className="suggestion-chip-icon">{s.icon}</span>
+                  {s.label}
+                </button>
+              ))}
             </div>
           </div>
         ) : (
           <MessageList />
         )}
 
+        {/* ── CHAT INPUT (always visible at bottom) ── */}
         <ChatInput />
       </main>
     </div>

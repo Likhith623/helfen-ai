@@ -4,100 +4,49 @@ import { useEffect, useRef, useState } from 'react'
 import { useAppStore } from '@/store/appStore'
 import { supabase } from '@/lib/supabase'
 import {
-  Plus, MessageSquare, Clock, Pin, Archive, Search,
-  Settings, HelpCircle, ChevronDown, Trash2, Edit3,
-  MoreHorizontal, Sparkles, BookOpen, Timer
+  Menu, Plus, MessageSquare, Search, Sparkles,
+  Image, Video, BookOpen, Timer, Settings,
+  MoreHorizontal, Pin, Trash2, NotebookPen
 } from 'lucide-react'
 import toast from 'react-hot-toast'
 
 export function Sidebar() {
   const {
-    sidebarOpen, activeConversationId, setActiveConversationId,
+    sidebarOpen, setSidebarOpen,
+    activeConversationId, setActiveConversationId,
     conversations, setConversations, addConversation, removeConversation,
-    updateConversation, isTemporaryChat, setIsTemporaryChat, theme
+    updateConversation, isTemporaryChat, setIsTemporaryChat, setMessages
   } = useAppStore()
 
   const [searchQuery, setSearchQuery] = useState('')
-  const [groupedConvs, setGroupedConvs] = useState<Record<string, typeof conversations>>({})
   const [activeMenu, setActiveMenu] = useState<string | null>(null)
   const menuRef = useRef<HTMLDivElement>(null)
 
-  useEffect(() => {
-    loadConversations()
-  }, [])
+  useEffect(() => { loadConversations() }, [])
 
   useEffect(() => {
-    // Group conversations by date
-    const groups: Record<string, typeof conversations> = {}
-    const now = new Date()
-    const filtered = conversations.filter((c) =>
-      !c.is_archived &&
-      c.title.toLowerCase().includes(searchQuery.toLowerCase())
-    )
-
-    for (const conv of filtered) {
-      const date = new Date(conv.updated_at)
-      const diffDays = Math.floor((now.getTime() - date.getTime()) / (1000 * 60 * 60 * 24))
-      let group = 'Older'
-      if (diffDays === 0) group = 'Today'
-      else if (diffDays === 1) group = 'Yesterday'
-      else if (diffDays < 7) group = 'Previous 7 days'
-      else if (diffDays < 30) group = 'Previous 30 days'
-
-      if (!groups[group]) groups[group] = []
-      groups[group].push(conv)
-    }
-    setGroupedConvs(groups)
-  }, [conversations, searchQuery])
-
-  useEffect(() => {
-    const handleClick = (e: MouseEvent) => {
-      if (menuRef.current && !menuRef.current.contains(e.target as Node)) {
+    const handler = (e: MouseEvent) => {
+      if (menuRef.current && !menuRef.current.contains(e.target as Node))
         setActiveMenu(null)
-      }
     }
-    document.addEventListener('mousedown', handleClick)
-    return () => document.removeEventListener('mousedown', handleClick)
+    document.addEventListener('mousedown', handler)
+    return () => document.removeEventListener('mousedown', handler)
   }, [])
 
   async function loadConversations() {
     const { data: { user } } = await supabase.auth.getUser()
     if (!user) return
-
     const { data } = await supabase
-      .from('conversations')
-      .select('*')
-      .eq('user_id', user.id)
-      .eq('is_temporary', false)
-      .order('updated_at', { ascending: false })
-      .limit(100)
-
-    if (data) setConversations(data as typeof conversations)
+      .from('conversations').select('*')
+      .eq('user_id', user.id).eq('is_temporary', false)
+      .order('updated_at', { ascending: false }).limit(100)
+    if (data) setConversations(data as any)
   }
 
-  async function createNewChat() {
-    const { data: { user } } = await supabase.auth.getUser()
-    if (!user) {
-      // Allow anonymous / guest mode
-      setActiveConversationId(null)
-      return
-    }
-
-    const { data, error } = await supabase
-      .from('conversations')
-      .insert({
-        user_id: user.id,
-        title: 'New Chat',
-        model: 'llama3.2:3b',
-        is_temporary: false,
-      })
-      .select()
-      .single()
-
-    if (data) {
-      addConversation(data as typeof conversations[0])
-      setActiveConversationId(data.id)
-    }
+  async function newChat() {
+    setActiveConversationId(null)
+    setMessages([])
+    setIsTemporaryChat(false)
   }
 
   async function deleteConversation(id: string) {
@@ -114,108 +63,131 @@ export function Sidebar() {
     setActiveMenu(null)
   }
 
+  const filtered = conversations.filter(c =>
+    !c.is_archived && c.title.toLowerCase().includes(searchQuery.toLowerCase())
+  )
+
+  // Group by date (safe for SSR)
+  const groups: Record<string, typeof conversations> = {}
+  const now = typeof window !== 'undefined' ? new Date() : new Date(0)
+  for (const c of filtered) {
+    const diff = Math.floor((now.getTime() - new Date(c.updated_at).getTime()) / 86400000)
+    const g = diff === 0 ? 'Today' : diff === 1 ? 'Yesterday'
+      : diff < 7 ? 'Previous 7 days' : diff < 30 ? 'Previous 30 days' : 'Older'
+    if (!groups[g]) groups[g] = []
+    groups[g].push(c)
+  }
   const groupOrder = ['Today', 'Yesterday', 'Previous 7 days', 'Previous 30 days', 'Older']
 
   if (!sidebarOpen) return null
 
   return (
     <aside className="sidebar fade-in">
-      {/* Header */}
+      {/* ── HEADER ── */}
       <div className="sidebar-header">
+        <div className="sidebar-brand">
+          {/* Gemini-style colourful diamond icon */}
+          <div className="sidebar-brand-icon">
+            <Sparkles size={14} color="white" />
+          </div>
+          <span className="sidebar-brand-name">Helfen</span>
+        </div>
         <button
-          className="sidebar-menu-btn"
-          onClick={() => useAppStore.getState().setSidebarOpen(false)}
+          className="sidebar-icon-btn"
           title="Close sidebar"
+          onClick={() => setSidebarOpen(false)}
         >
-          <MessageSquare size={20} />
-        </button>
-        <button className="sidebar-menu-btn" title="Search">
-          <Search size={18} />
+          <Menu size={18} />
         </button>
       </div>
 
-      {/* New Chat Button */}
-      <button className="sidebar-new-chat" onClick={createNewChat}>
-        <Plus size={18} />
-        <span>New chat</span>
-      </button>
+      {/* Chat / Spark tabs */}
+      <div className="sidebar-tabs">
+        <button className="sidebar-tab active">Chat</button>
+        <button className="sidebar-tab">Spark <span style={{ fontSize: 10, opacity: 0.6, marginLeft: 4 }}>BETA</span></button>
+      </div>
 
-      {/* Temporary Chat */}
-      <button
-        className="sidebar-nav-item"
-        onClick={() => {
-          setIsTemporaryChat(true)
-          setActiveConversationId(null)
-        }}
-        style={{ margin: '4px 8px', width: 'calc(100% - 16px)' }}
-      >
-        <Timer size={18} />
-        <span className="item-title">Temporary chat</span>
-      </button>
+      {/* ── NAV ITEMS ── */}
+      <div className="sidebar-nav-group">
+        <button className="sidebar-nav-item active" onClick={newChat}>
+          <Plus size={18} />
+          <span className="item-label">New chat</span>
+        </button>
+        <button className="sidebar-nav-item">
+          <Search size={18} />
+          <span className="item-label">Search chats</span>
+        </button>
+        <button className="sidebar-nav-item">
+          <Sparkles size={18} />
+          <span className="item-label">Students</span>
+        </button>
+        <button className="sidebar-nav-item">
+          <Image size={18} />
+          <span className="item-label">Images</span>
+        </button>
+        <button className="sidebar-nav-item">
+          <Video size={18} />
+          <span className="item-label">Videos</span>
+        </button>
+        <button className="sidebar-nav-item">
+          <BookOpen size={18} />
+          <span className="item-label">Library</span>
+        </button>
+      </div>
 
-      {/* Explore / Gems */}
       <div className="sidebar-divider" />
-      
-      <button className="sidebar-nav-item" style={{ margin: '0 8px', width: 'calc(100% - 16px)' }}>
-        <Sparkles size={18} />
-        <span className="item-title">Explore Helfen AI</span>
-      </button>
+
+      {/* Notebooks */}
+      <div className="sidebar-section">Notebooks</div>
+      <div className="sidebar-nav-group">
+        <button className="sidebar-nav-item">
+          <Plus size={18} />
+          <span className="item-label">New notebook</span>
+        </button>
+        <button
+          className="sidebar-nav-item"
+          onClick={() => { setIsTemporaryChat(true); setActiveConversationId(null) }}
+        >
+          <Timer size={18} />
+          <span className="item-label">Temporary chat</span>
+        </button>
+      </div>
 
       <div className="sidebar-divider" />
 
       {/* Search */}
-      <div style={{ padding: '8px 12px' }}>
+      <div style={{ padding: '4px 12px 8px' }}>
         <div style={{
           display: 'flex', alignItems: 'center', gap: 8,
           background: 'var(--bg-hover)', borderRadius: 'var(--radius-md)',
-          padding: '6px 12px', border: '1px solid transparent'
+          padding: '7px 12px'
         }}>
-          <Search size={14} style={{ color: 'var(--text-muted)', flexShrink: 0 }} />
+          <Search size={13} style={{ color: 'var(--text-muted)', flexShrink: 0 }} />
           <input
             type="text"
             placeholder="Search chats"
             value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
+            onChange={e => setSearchQuery(e.target.value)}
             style={{
               background: 'transparent', border: 'none', outline: 'none',
               color: 'var(--text-primary)', fontSize: 13, width: '100%',
-              fontFamily: 'var(--font-inter)'
+              fontFamily: 'var(--font)'
             }}
           />
         </div>
       </div>
 
-      {/* Pinned */}
-      {conversations.filter(c => c.is_pinned).length > 0 && (
-        <>
-          <div className="sidebar-section-title">Pinned</div>
-          <div className="sidebar-nav">
-            {conversations.filter(c => c.is_pinned).map(conv => (
-              <ConvItem
-                key={conv.id}
-                conv={conv}
-                active={activeConversationId === conv.id}
-                onClick={() => { setActiveConversationId(conv.id); setIsTemporaryChat(false) }}
-                onDelete={() => deleteConversation(conv.id)}
-                onPin={() => pinConversation(conv.id, conv.is_pinned)}
-                activeMenu={activeMenu}
-                setActiveMenu={setActiveMenu}
-                menuRef={menuRef}
-              />
-            ))}
-          </div>
-          <div className="sidebar-divider" />
-        </>
-      )}
-
-      {/* Conversations by group */}
+      {/* ── RECENTS ── */}
+      <div className="sidebar-section">Recents</div>
       <div className="sidebar-conversations">
-        {groupOrder.map(group => (
-          groupedConvs[group] && groupedConvs[group].length > 0 ? (
+        {groupOrder.map(group =>
+          groups[group]?.length ? (
             <div key={group}>
-              <div className="sidebar-section-title">{group}</div>
-              <div className="sidebar-nav">
-                {groupedConvs[group].map(conv => (
+              {group !== 'Today' && (
+                <div className="sidebar-section" style={{ paddingTop: 8 }}>{group}</div>
+              )}
+              <div className="sidebar-nav-group" style={{ gap: 1 }}>
+                {groups[group].map(conv => (
                   <ConvItem
                     key={conv.id}
                     conv={conv}
@@ -231,24 +203,23 @@ export function Sidebar() {
               </div>
             </div>
           ) : null
-        ))}
-
-        {Object.keys(groupedConvs).length === 0 && searchQuery && (
-          <div style={{ textAlign: 'center', color: 'var(--text-muted)', padding: '24px 16px', fontSize: 13 }}>
-            No chats found
+        )}
+        {filtered.length === 0 && (
+          <div style={{ textAlign: 'center', color: 'var(--text-muted)', padding: '32px 16px', fontSize: 13 }}>
+            {searchQuery ? 'No chats found' : 'No chats yet'}
           </div>
         )}
       </div>
 
-      {/* Footer */}
+      {/* ── FOOTER ── */}
       <div className="sidebar-footer">
-        <button className="sidebar-nav-item" style={{ width: '100%' }}>
-          <Settings size={18} />
-          <span className="item-title">Settings</span>
-        </button>
-        <button className="sidebar-nav-item" style={{ width: '100%' }}>
-          <HelpCircle size={18} />
-          <span className="item-title">Help</span>
+        <button className="sidebar-user">
+          <div className="sidebar-user-avatar">L</div>
+          <div className="sidebar-user-info">
+            <div className="sidebar-user-name">Likhith Vasireddy</div>
+            <div className="sidebar-user-plan">Pro</div>
+          </div>
+          <Settings size={16} style={{ color: 'var(--text-muted)', flexShrink: 0 }} />
         </button>
       </div>
     </aside>
@@ -268,34 +239,30 @@ function ConvItem({
   menuRef: React.RefObject<HTMLDivElement | null>
 }) {
   return (
-    <div className={`sidebar-nav-item ${active ? 'active' : ''}`} onClick={onClick}>
-      <MessageSquare size={16} style={{ flexShrink: 0 }} />
-      <span className="item-title">{conv.title}</span>
-      <div className="item-actions" onClick={(e) => e.stopPropagation()}>
+    <div
+      className={`sidebar-nav-item ${active ? 'active' : ''}`}
+      onClick={onClick}
+      style={{ position: 'relative' }}
+    >
+      <MessageSquare size={15} style={{ flexShrink: 0, opacity: 0.7 }} />
+      <span className="item-label">{conv.title}</span>
+      <div className="item-actions" onClick={e => e.stopPropagation()}>
+        {conv.is_pinned && <Pin size={12} style={{ color: 'var(--text-muted)' }} />}
         <button
-          className="icon-btn"
+          className="sidebar-icon-btn"
           style={{ width: 24, height: 24 }}
-          onClick={(e) => {
-            e.stopPropagation()
-            setActiveMenu(activeMenu === conv.id ? null : conv.id)
-          }}
+          onClick={e => { e.stopPropagation(); setActiveMenu(activeMenu === conv.id ? null : conv.id) }}
         >
-          <MoreHorizontal size={14} />
+          <MoreHorizontal size={13} />
         </button>
         {activeMenu === conv.id && (
-          <div
-            ref={menuRef}
-            className="dropdown"
-            style={{ position: 'absolute', right: 8, top: '100%', minWidth: 160 }}
-          >
+          <div ref={menuRef} className="dropdown" style={{ right: 0, top: '100%' }}>
             <button className="dropdown-item" onClick={onPin}>
-              <Pin size={14} />
-              {conv.is_pinned ? 'Unpin' : 'Pin chat'}
+              <Pin size={13} />{conv.is_pinned ? 'Unpin' : 'Pin'}
             </button>
             <div className="dropdown-divider" />
             <button className="dropdown-item danger" onClick={onDelete}>
-              <Trash2 size={14} />
-              Delete
+              <Trash2 size={13} />Delete
             </button>
           </div>
         )}
