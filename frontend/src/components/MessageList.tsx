@@ -205,7 +205,6 @@ export function MessageList() {
                     </svg>
                   </div>
                   <span className="message-role-label">Helfen AI</span>
-                  {msg.model && <span className="model-tag">{msg.model}</span>}
                 </div>
               )}
 
@@ -263,23 +262,6 @@ export function MessageList() {
           )
         })}
 
-        {/* Streaming indicator */}
-        {isStreaming && streamingMessageId && (
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '8px 0' }}>
-            <div className="message-avatar ai" style={{ width: 24, height: 24, fontSize: 11 }}>
-              <svg width="12" height="12" viewBox="0 0 28 28" fill="none">
-                <path d="M14 3L25 9V19L14 25L3 19V9L14 3Z" fill="url(#grad2)" />
-                <defs>
-                  <linearGradient id="grad2" x1="3" y1="3" x2="25" y2="25">
-                    <stop stopColor="#4285f4" />
-                    <stop offset="1" stopColor="#fbbc05" />
-                  </linearGradient>
-                </defs>
-              </svg>
-            </div>
-            <div className="streaming-dots"><span /><span /><span /></div>
-          </div>
-        )}
 
         <div ref={bottomRef} />
       </div>
