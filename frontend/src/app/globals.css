@@ -894,9 +894,9 @@ input, textarea { font-family: inherit; }
   backdrop-filter: blur(40px) saturate(250%);
   -webkit-backdrop-filter: blur(40px) saturate(250%);
   
-  border: 1px solid rgba(255, 255, 255, 0.15);
+  border: 1px solid var(--border-strong);
   border-radius: 24px;
-  box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.05), 0 32px 80px rgba(0, 0, 0, 0.8);
+  box-shadow: 0 0 0 1px var(--border), 0 32px 80px rgba(0, 0, 0, 0.3);
   overflow: hidden;
   animation: modalPopIn 0.25s cubic-bezier(0.16, 1, 0.3, 1) both;
 }
@@ -957,13 +957,13 @@ input, textarea { font-family: inherit; }
   line-height: 1.6;
 }
 .inline-message.user {
-  background: rgba(255, 255, 255, 0.08);
+  background: var(--bg-hover);
   border-radius: 14px 14px 4px 14px;
   padding: 10px 14px;
   align-self: flex-end;
   max-width: 85%;
   color: var(--text-primary);
-  border: 1px solid rgba(255,255,255,0.05);
+  border: 1px solid var(--border);
 }
 .inline-message.ai {
   color: var(--text-primary);
@@ -976,9 +976,9 @@ input, textarea { font-family: inherit; }
   margin: 12px 16px 16px;
   padding: 10px 16px;
   border-radius: var(--radius-full);
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  background: rgba(0, 0, 0, 0.25);
-  box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.1);
+  border: 1px solid var(--border-strong);
+  background: var(--bg-input);
+  box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.05);
 }
 .inline-chat-input input {
   flex: 1;
