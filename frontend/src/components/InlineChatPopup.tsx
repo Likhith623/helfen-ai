@@ -155,13 +155,13 @@ export function InlineChatPopup({ annotation, anchorY, onClose }: Props) {
         onClick={e => e.stopPropagation()}
       >
         <div className="inline-chat-header">
-          <Sparkles size={16} className="gemini-gradient-text" />
-          <div className="inline-selected-text-preview">
+          <Sparkles size={16} className="gemini-gradient-text" style={{ flexShrink: 0 }} />
+          <div className="inline-selected-preview">
             Discussing: <strong>"{annotation.selected_text}"</strong>
           </div>
           <button 
             className="icon-btn" 
-            style={{ width: 28, height: 28 }} 
+            style={{ width: 28, height: 28, flexShrink: 0 }} 
             onClick={onClose}
           >
             <X size={14} />
