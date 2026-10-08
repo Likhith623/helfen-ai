@@ -1,6 +1,7 @@
 'use client'
 
-import { useState, useRef, useEffect } from 'react'
+import { useState, useRef, useEffect, useEffect as useIsomorphicLayoutEffect } from 'react'
+import { createPortal } from 'react-dom'
 import { X, Send, Play, Sparkles } from 'lucide-react'
 import type { InlineAnnotation, InlineMessage } from '@/store/appStore'
 import { useAppStore } from '@/store/appStore'
@@ -143,7 +144,12 @@ export function InlineChatPopup({ annotation, anchorY, onClose }: Props) {
     }
   }
 
-  return (
+  const [mounted, setMounted] = useState(false)
+  useEffect(() => setMounted(true), [])
+
+  if (!mounted) return null
+
+  return createPortal(
     <>
 
       <div 
@@ -213,6 +219,7 @@ export function InlineChatPopup({ annotation, anchorY, onClose }: Props) {
           </button>
         </form>
       </div>
-    </>
+    </>,
+    document.body
   )
 }
