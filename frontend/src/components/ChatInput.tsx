@@ -123,9 +123,11 @@ export function ChatInput() {
         if (done) break
         const chunk = decoder.decode(value)
         for (const line of chunk.split('\n').filter(Boolean)) {
-          if (line.startsWith('data: ')) {
+          if (line.startsWith('data:')) {
+            const jsonStr = line.slice(5).trim()
+            if (!jsonStr) continue
             try {
-              const parsed = JSON.parse(line.slice(6))
+              const parsed = JSON.parse(jsonStr)
               if (parsed.content) {
                 fullContent += parsed.content
                 updateMessage(aiMsgId, { content: fullContent })

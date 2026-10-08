@@ -71,9 +71,15 @@ export function InlineChatPopup({ annotation, anchorY, onClose }: Props) {
     setMessages(prev => [...prev, aiMsg])
 
     try {
-      const res = await fetch('/api/inline-chat', {
+      const { data: sessionData } = await supabase.auth.getSession()
+      const token = sessionData?.session?.access_token
+
+      const res = await fetch('http://localhost:8080/api/v1/inline-chat', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 
+          'Content-Type': 'application/json',
+          ...(token ? { 'Authorization': `Bearer ${token}` } : {})
+        },
         body: JSON.stringify({
           selectedText: annotation.selected_text,
           question: userMsg.content,
@@ -98,14 +104,18 @@ export function InlineChatPopup({ annotation, anchorY, onClose }: Props) {
         const lines = chunk.split('\n').filter(Boolean)
 
         for (const line of lines) {
-          if (line.startsWith('data: ')) {
-            const data = JSON.parse(line.slice(6))
-            if (data.content) {
-              fullContent += data.content
-              setMessages(prev => prev.map(m => 
-                m.id === aiMsgId ? { ...m, content: fullContent } : m
-              ))
-            }
+          if (line.startsWith('data:')) {
+            const jsonStr = line.slice(5).trim()
+            if (!jsonStr) continue
+            try {
+              const data = JSON.parse(jsonStr)
+              if (data.content) {
+                fullContent += data.content
+                setMessages(prev => prev.map(m => 
+                  m.id === aiMsgId ? { ...m, content: fullContent } : m
+                ))
+              }
+            } catch { /* ignore parse errors */ }
           }
         }
       }
