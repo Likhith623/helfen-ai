@@ -23,6 +23,7 @@
 
   --border:        rgba(255,255,255,0.08);
   --border-strong: rgba(255,255,255,0.14);
+  --bg-glass:      rgba(18,20,27,0.85);
 
   /* Accent colours */
   --blue:   #4285f4;
@@ -59,6 +60,7 @@
   --bg-card:    #ffffff;
   --bg-hover:   #e8f0fe;
   --bg-active:  #d2e3fc;
+  --bg-glass:   rgba(255,255,255,0.85);
   --text-primary:   #202124;
   --text-secondary: #5f6368;
   --text-muted:     #9aa0a6;
@@ -88,6 +90,7 @@ input, textarea { font-family: inherit; }
 /* ===== ANIMATIONS ===== */
 @keyframes fadeIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
 @keyframes popIn  { from { opacity: 0; transform: scale(0.85); } to { opacity: 1; transform: scale(1); } }
+@keyframes modalPopIn { from { opacity: 0; transform: translate(-50%, -50%) scale(0.9); } to { opacity: 1; transform: translate(-50%, -50%) scale(1); } }
 @keyframes pulse  { 0%,100% { opacity: 1; } 50% { opacity: 0.4; } }
 @keyframes spin   { to { transform: rotate(360deg); } }
 @keyframes shimmer { 0% { background-position: -400px 0; } 100% { background-position: 400px 0; } }
@@ -895,7 +898,7 @@ input, textarea { font-family: inherit; }
   border-radius: 24px;
   box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.05), 0 32px 80px rgba(0, 0, 0, 0.8);
   overflow: hidden;
-  animation: popIn 0.25s cubic-bezier(0.16, 1, 0.3, 1) both;
+  animation: modalPopIn 0.25s cubic-bezier(0.16, 1, 0.3, 1) both;
 }
 
 /* Add a glowing colorful blob behind the modal to make the glass effect visible */
