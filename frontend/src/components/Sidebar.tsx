@@ -6,9 +6,10 @@ import { supabase, getConversationContextData } from '@/lib/supabase'
 import {
   Menu, Plus, MessageSquare, Search, Sparkles,
   Image, Video, BookOpen, Timer, Settings,
-  MoreHorizontal, Pin, Trash2, NotebookPen, Link2, LogIn
+  MoreHorizontal, Pin, Trash2, NotebookPen, Link2, LogIn, FileText
 } from 'lucide-react'
 import { AccountPopover } from '@/components/AccountPopover'
+import { generateConversationPdf } from '@/lib/pdfGenerator'
 import toast from 'react-hot-toast'
 
 export function Sidebar() {
@@ -87,6 +88,31 @@ export function Sidebar() {
         border: '1px solid var(--border)'
       }
     })
+  }
+
+  async function handleExportChatPdf(convId: string, title: string) {
+    setActiveMenu(null)
+    const toastId = toast.loading(`Preparing PDF for "${title}"...`)
+    try {
+      const { data, error } = await supabase
+        .from('messages')
+        .select('*')
+        .eq('conversation_id', convId)
+        .order('created_at', { ascending: true })
+
+      if (error || !data || data.length === 0) {
+        toast.error('No messages found to export', { id: toastId })
+        return
+      }
+
+      await generateConversationPdf(data, {
+        title,
+      })
+      toast.success('PDF exported successfully!', { id: toastId })
+    } catch (err) {
+      console.error('Failed to generate PDF:', err)
+      toast.error('Failed to generate PDF', { id: toastId })
+    }
   }
 
   const filtered = conversations.filter(c =>
@@ -222,6 +248,7 @@ export function Sidebar() {
                     onDelete={() => deleteConversation(conv.id)}
                     onPin={() => pinConversation(conv.id, conv.is_pinned)}
                     onContinue={() => handleContinueChat(conv.id, conv.title)}
+                    onExportPdf={() => handleExportChatPdf(conv.id, conv.title)}
                     activeMenu={activeMenu}
                     setActiveMenu={setActiveMenu}
                     menuRef={menuRef}
@@ -287,7 +314,7 @@ export function Sidebar() {
 }
 
 function ConvItem({
-  conv, active, onClick, onDelete, onPin, onContinue, activeMenu, setActiveMenu, menuRef
+  conv, active, onClick, onDelete, onPin, onContinue, onExportPdf, activeMenu, setActiveMenu, menuRef
 }: {
   conv: { id: string; title: string; is_pinned: boolean }
   active: boolean
@@ -295,6 +322,7 @@ function ConvItem({
   onDelete: () => void
   onPin: () => void
   onContinue: () => void
+  onExportPdf: () => void
   activeMenu: string | null
   setActiveMenu: (id: string | null) => void
   menuRef: React.RefObject<HTMLDivElement | null>
@@ -320,6 +348,9 @@ function ConvItem({
           <div ref={menuRef} className="dropdown" style={{ right: 0, top: '100%' }}>
             <button className="dropdown-item" onClick={onContinue}>
               <Link2 size={13} />Continue in new chat
+            </button>
+            <button className="dropdown-item" onClick={onExportPdf}>
+              <FileText size={13} />Export as PDF
             </button>
             <button className="dropdown-item" onClick={onPin}>
               <Pin size={13} />{conv.is_pinned ? 'Unpin' : 'Pin'}
