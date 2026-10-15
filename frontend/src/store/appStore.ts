@@ -1,6 +1,7 @@
 import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
 import { supabase } from '@/lib/supabase'
+import type { RagChunk, IndexedDocument } from '@/lib/ragEngine'
 
 export type Theme = 'dark' | 'light'
 
@@ -45,6 +46,7 @@ export interface Message {
   annotations?: InlineAnnotation[]
   attachments?: MessageAttachment[]
   images?: string[]
+  retrievedChunks?: RagChunk[]
 }
 
 export interface InlineAnnotation {
@@ -162,6 +164,22 @@ interface AppState {
   /* Prompt Template Manager Modal */
   isTemplateManagerOpen: boolean
   setIsTemplateManagerOpen: (open: boolean) => void
+
+  /* RAG Knowledge Base & Retrieval State */
+  ragModeEnabled: boolean
+  setRagModeEnabled: (enabled: boolean) => void
+  toggleRagMode: () => void
+  knowledgeDocuments: IndexedDocument[]
+  setKnowledgeDocuments: (docs: IndexedDocument[]) => void
+  addKnowledgeDocument: (doc: IndexedDocument) => void
+  removeKnowledgeDocument: (id: string) => void
+  clearKnowledgeBase: () => void
+  isKnowledgeBaseOpen: boolean
+  setIsKnowledgeBaseOpen: (open: boolean) => void
+  inspectingChunks: RagChunk[] | null
+  inspectingMessageId: string | null
+  openRagInspector: (messageId: string, chunks: RagChunk[]) => void
+  closeRagInspector: () => void
 
   /* Auth State */
   currentUser: { id: string; email?: string } | null
@@ -327,6 +345,34 @@ export const useAppStore = create<AppState>()(
       isTemplateManagerOpen: false,
       setIsTemplateManagerOpen: (open) => set({ isTemplateManagerOpen: open }),
 
+      /* RAG Knowledge Base Implementation */
+      ragModeEnabled: true,
+      setRagModeEnabled: (enabled) => set({ ragModeEnabled: enabled }),
+      toggleRagMode: () => set((state) => ({ ragModeEnabled: !state.ragModeEnabled })),
+
+      knowledgeDocuments: [],
+      setKnowledgeDocuments: (docs) => set({ knowledgeDocuments: docs }),
+      addKnowledgeDocument: (doc) =>
+        set((state) => {
+          const filtered = state.knowledgeDocuments.filter((d) => d.id !== doc.id && d.name !== doc.name)
+          return { knowledgeDocuments: [doc, ...filtered] }
+        }),
+      removeKnowledgeDocument: (id) =>
+        set((state) => ({
+          knowledgeDocuments: state.knowledgeDocuments.filter((d) => d.id !== id),
+        })),
+      clearKnowledgeBase: () => set({ knowledgeDocuments: [] }),
+
+      isKnowledgeBaseOpen: false,
+      setIsKnowledgeBaseOpen: (open) => set({ isKnowledgeBaseOpen: open }),
+
+      inspectingChunks: null,
+      inspectingMessageId: null,
+      openRagInspector: (messageId, chunks) =>
+        set({ inspectingMessageId: messageId, inspectingChunks: chunks }),
+      closeRagInspector: () =>
+        set({ inspectingMessageId: null, inspectingChunks: null }),
+
       currentUser: null,
       userProfile: null,
       isAuthModalOpen: false,
@@ -364,6 +410,8 @@ export const useAppStore = create<AppState>()(
         selectedModel: state.selectedModel,
         voiceEnabled: state.voiceEnabled,
         customTemplates: state.customTemplates,
+        ragModeEnabled: state.ragModeEnabled,
+        knowledgeDocuments: state.knowledgeDocuments,
       }),
     }
   )
