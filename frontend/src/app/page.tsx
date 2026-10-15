@@ -9,6 +9,7 @@ import { PromptTemplateModal } from '@/components/PromptTemplateModal'
 import { ShareModal } from '@/components/ShareModal'
 import { KnowledgeBaseModal } from '@/components/KnowledgeBaseModal'
 import { RagSourceInspector } from '@/components/RagSourceInspector'
+import { ContinuousVoiceModal } from '@/components/ContinuousVoiceModal'
 import { AccountPopover } from '@/components/AccountPopover'
 import { useAppStore } from '@/store/appStore'
 import { supabase, getConversationContextData } from '@/lib/supabase'
@@ -347,6 +348,9 @@ export default function Home() {
 
       {/* ── RAG GROUNDED SOURCES INSPECTOR ── */}
       <RagSourceInspector />
+
+      {/* ── CONTINUOUS TWO-WAY VOICE MODE ── */}
+      <ContinuousVoiceModal />
     </div>
   )
 }
