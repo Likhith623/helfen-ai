@@ -1,9 +1,10 @@
 'use client'
-
+ 
 import { useState, useRef, useEffect } from 'react'
-import { Send, Mic, StopCircle, ChevronDown, Plus } from 'lucide-react'
+import { Send, Mic, StopCircle, ChevronDown, Plus, Link2, X } from 'lucide-react'
 import { useAppStore } from '@/store/appStore'
 import { supabase } from '@/lib/supabase'
+import { ChatContextModal } from '@/components/ChatContextModal'
 
 export function ChatInput() {
   const [input, setInput] = useState('')
@@ -14,7 +15,9 @@ export function ChatInput() {
     isStreaming, setIsStreaming,
     addMessage, activeConversationId, setActiveConversationId,
     messages, selectedModel, isTemporaryChat,
-    setStreamingMessageId, updateMessage, addConversation
+    setStreamingMessageId, updateMessage, addConversation,
+    continuationParentId, continuationParentTitle, continuationMessagesCount,
+    clearContinuationParent, setIsContextModalOpen
   } = useAppStore()
 
   /* Auto-resize textarea */
@@ -162,6 +165,47 @@ export function ChatInput() {
   return (
     <div className="input-area">
       <div className="input-area-inner">
+        {/* Attached continuation context banner */}
+        {continuationParentId && (
+          <div className="attached-context-banner">
+            <div
+              className="attached-context-left"
+              onClick={() => setIsContextModalOpen(true)}
+              title="Click to view or change linked context chat"
+            >
+              <div className="attached-context-pulse" />
+              <div className="attached-context-text">
+                <span className="attached-context-tag">Continuing:</span>
+                <span className="attached-context-title">
+                  {continuationParentTitle || 'Previous Chat'}
+                </span>
+                {continuationMessagesCount > 0 && (
+                  <span className="attached-context-count">
+                    ({continuationMessagesCount} msgs)
+                  </span>
+                )}
+              </div>
+            </div>
+            <div className="attached-context-right">
+              <button
+                type="button"
+                className="attached-context-change-btn"
+                onClick={() => setIsContextModalOpen(true)}
+              >
+                Change
+              </button>
+              <button
+                type="button"
+                className="attached-context-close-btn"
+                onClick={clearContinuationParent}
+                title="Remove linked context"
+              >
+                <X size={14} />
+              </button>
+            </div>
+          </div>
+        )}
+
         {/* Glowing coloured border on focus */}
         <div className="input-glow-wrapper">
           <form onSubmit={handleSubmit}>
@@ -183,6 +227,27 @@ export function ChatInput() {
               />
 
               <div className="input-actions">
+                {/* Context link button inside the search / prompt box */}
+                <button
+                  type="button"
+                  className={`context-link-btn ${continuationParentId ? 'has-context' : ''}`}
+                  onClick={() => setIsContextModalOpen(true)}
+                  title={
+                    continuationParentId
+                      ? `Continuing from: "${continuationParentTitle}". Click to change.`
+                      : 'Choose an earlier chat to use as context for this conversation'
+                  }
+                >
+                  <Link2 size={13} />
+                  <span>
+                    {continuationParentId
+                      ? continuationParentTitle
+                        ? continuationParentTitle.slice(0, 14) + (continuationParentTitle.length > 14 ? '…' : '')
+                        : 'Context Linked'
+                      : 'Context'}
+                  </span>
+                </button>
+
                 {/* Model pill — like Gemini's "Flash ▾" */}
                 <button type="button" className="model-pill" title="Change model">
                   Flash <ChevronDown size={13} />
@@ -231,6 +296,9 @@ export function ChatInput() {
           Helfen AI can make mistakes. Select text in any response to ask inline questions.
         </div>
       </div>
+
+      {/* Continuation Chat Selection Modal */}
+      <ChatContextModal />
     </div>
   )
 }
