@@ -28,13 +28,28 @@ public class OllamaService {
     }
 
     public Flux<String> streamChat(ChatRequest request) {
-        // Retrieve context from Redis
+        // Retrieve context from Redis for current conversation
         String memoryContext = redisService.getConversationContext(request.getConversationId());
         
-        String systemPrompt = "You are Helfen AI, a helpful, harmless, and honest AI assistant. You provide clear, concise, and accurate responses.";
-        if (memoryContext != null && !memoryContext.isEmpty()) {
-            systemPrompt += "\n\nContext from previous interactions:\n" + memoryContext;
+        StringBuilder systemPromptBuilder = new StringBuilder();
+        systemPromptBuilder.append("You are Helfen AI, a helpful, harmless, and honest AI assistant. You provide clear, concise, and accurate responses.");
+
+        // If this conversation is a continuation of an earlier conversation, inject continuation context
+        if (request.getContinuationContext() != null && !request.getContinuationContext().isBlank()) {
+            systemPromptBuilder.append("\n\n").append(request.getContinuationContext());
+        } else if (request.getParentConversationId() != null && !request.getParentConversationId().equals("temp")) {
+            // Check if parent conversation has context cached in Redis
+            String parentMemory = redisService.getConversationContext(request.getParentConversationId());
+            if (parentMemory != null && !parentMemory.isBlank()) {
+                systemPromptBuilder.append("\n\nContext carried over from previous session:\n").append(parentMemory);
+            }
         }
+
+        if (memoryContext != null && !memoryContext.isEmpty()) {
+            systemPromptBuilder.append("\n\nContext from current interactions:\n").append(memoryContext);
+        }
+
+        String systemPrompt = systemPromptBuilder.toString();
 
         List<Map<String, Object>> ollamaMessages = new ArrayList<>();
         

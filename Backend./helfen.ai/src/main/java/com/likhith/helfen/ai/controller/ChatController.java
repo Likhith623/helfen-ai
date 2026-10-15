@@ -46,8 +46,11 @@ public class ChatController {
                             // Caching context to Redis
                             if (!request.isTemporary()) {
                                 String summary = fullResponse.length() > 500 ? fullResponse.substring(0, 500) : fullResponse.toString();
-                                String cacheData = String.format("{\"lastUpdated\": \"%s\", \"summary\": %s}", 
-                                        java.time.Instant.now().toString(), objectMapper.writeValueAsString(summary));
+                                String parentPart = request.getParentConversationId() != null 
+                                        ? String.format(", \"parentConversationId\": %s", objectMapper.writeValueAsString(request.getParentConversationId()))
+                                        : "";
+                                String cacheData = String.format("{\"lastUpdated\": \"%s\", \"summary\": %s%s}", 
+                                        java.time.Instant.now().toString(), objectMapper.writeValueAsString(summary), parentPart);
                                 redisService.cacheConversationContext(request.getConversationId(), cacheData);
                             }
                             return "{\"content\": \"\", \"done\": true}";
