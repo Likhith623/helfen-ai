@@ -3,7 +3,7 @@
 import { useState, useRef, useEffect } from 'react'
 import { Send, Mic, StopCircle, ChevronDown, Plus, Link2, X } from 'lucide-react'
 import { useAppStore } from '@/store/appStore'
-import { supabase } from '@/lib/supabase'
+import { supabase, getConversationContextData } from '@/lib/supabase'
 import { ChatContextModal } from '@/components/ChatContextModal'
 
 export function ChatInput() {
@@ -17,7 +17,7 @@ export function ChatInput() {
     messages, selectedModel, isTemporaryChat,
     setStreamingMessageId, updateMessage, addConversation,
     continuationParentId, continuationParentTitle, continuationMessagesCount,
-    clearContinuationParent, setIsContextModalOpen
+    continuationContextText, clearContinuationParent, setIsContextModalOpen
   } = useAppStore()
 
   /* Auto-resize textarea */
@@ -46,17 +46,52 @@ export function ChatInput() {
     if (textareaRef.current) textareaRef.current.style.height = '24px'
 
     let convId = activeConversationId
+    let resolvedContext = continuationContextText
+
+    // If context text hasn't been loaded yet, fetch it now
+    if (continuationParentId && !resolvedContext) {
+      try {
+        const ctxData = await getConversationContextData(continuationParentId)
+        resolvedContext = ctxData.formattedContext
+      } catch (err) {
+        console.error('Failed to load continuation context data:', err)
+      }
+    }
 
     /* Create conversation in DB if needed */
     if (!convId && !isTemporaryChat) {
       const { data: { user } } = await supabase.auth.getUser()
       if (user) {
-        const { data } = await supabase.from('conversations').insert({
+        const title = content.slice(0, 40) + (content.length > 40 ? '…' : '')
+        const insertPayload: any = {
           user_id: user.id,
-          title: content.slice(0, 40) + (content.length > 40 ? '…' : ''),
+          title,
           model: selectedModel,
-          is_temporary: false
-        }).select().single()
+          is_temporary: false,
+        }
+        if (continuationParentId) {
+          insertPayload.parent_conversation_id = continuationParentId
+        }
+
+        // Try inserting with parent_conversation_id first
+        let { data, error } = await supabase
+          .from('conversations')
+          .insert(insertPayload)
+          .select()
+          .single()
+
+        // Graceful fallback if the user has not run the database migration yet
+        if (error && continuationParentId) {
+          console.warn('Database column parent_conversation_id not found, falling back without column:', error.message)
+          delete insertPayload.parent_conversation_id
+          const fallback = await supabase
+            .from('conversations')
+            .insert(insertPayload)
+            .select()
+            .single()
+          data = fallback.data
+        }
+
         if (data) {
           convId = data.id
           addConversation(data as any)
@@ -107,6 +142,8 @@ export function ChatInput() {
         },
         body: JSON.stringify({
           conversationId: convId,
+          parentConversationId: continuationParentId || null,
+          continuationContext: resolvedContext || null,
           messages: [...messages, userMsg],
           model: selectedModel,
           isTemporary: isTemporaryChat
