@@ -181,9 +181,17 @@ export function MessageList() {
     setGeneratingPdfId(msg.id)
     try {
       const activeConv = conversations.find((c) => c.id === msg.conversation_id)
+      const promptText = promptMsg?.content?.trim()
+      const derivedTitle =
+        activeConv?.title && activeConv.title !== 'New Chat'
+          ? activeConv.title
+          : promptText
+            ? promptText.slice(0, 50) + (promptText.length > 50 ? '...' : '')
+            : 'Helfen AI Response'
+
       await generateResponsePdf(msg.content, {
-        title: activeConv?.title || 'Helfen AI Response',
-        prompt: promptMsg?.content,
+        title: derivedTitle,
+        prompt: promptText,
         model: msg.model || 'llama3.2:3b',
         createdAt: msg.created_at
       })
