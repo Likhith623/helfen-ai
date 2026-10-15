@@ -35,6 +35,11 @@ cartesia:
   api-key: sk_car_mB9oWJGMxLRiPTwGguVtn3
   base-url: https://api.cartesia.ai/tts/bytes
 
+# Deepgram STT configuration
+deepgram:
+  api-key: 0cdffc07282e93e2f88beab8da45c066c850b3bc
+  base-url: https://api.deepgram.com/v1/listen
+
 server:
   port: 8080
 
