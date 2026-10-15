@@ -181,6 +181,21 @@ interface AppState {
   openRagInspector: (messageId: string, chunks: RagChunk[]) => void
   closeRagInspector: () => void
 
+  /* Continuous Two-Way Voice Mode (Like ChatGPT Voice) */
+  isContinuousVoiceActive: boolean
+  voiceModeStatus: 'idle' | 'listening' | 'thinking' | 'speaking'
+  voiceUserTranscript: string
+  voiceAiTranscript: string
+  voiceVolumeLevel: number
+  voiceIsMuted: boolean
+  startContinuousVoice: () => void
+  stopContinuousVoice: () => void
+  setVoiceModeStatus: (status: 'idle' | 'listening' | 'thinking' | 'speaking') => void
+  setVoiceUserTranscript: (text: string) => void
+  setVoiceAiTranscript: (text: string) => void
+  setVoiceVolumeLevel: (vol: number) => void
+  toggleVoiceMute: () => void
+
   /* Auth State */
   currentUser: { id: string; email?: string } | null
   userProfile: UserProfile | null
@@ -372,6 +387,37 @@ export const useAppStore = create<AppState>()(
         set({ inspectingMessageId: messageId, inspectingChunks: chunks }),
       closeRagInspector: () =>
         set({ inspectingMessageId: null, inspectingChunks: null }),
+
+      /* Continuous Two-Way Voice Mode Implementation */
+      isContinuousVoiceActive: false,
+      voiceModeStatus: 'idle',
+      voiceUserTranscript: '',
+      voiceAiTranscript: '',
+      voiceVolumeLevel: 0,
+      voiceIsMuted: false,
+
+      startContinuousVoice: () =>
+        set({
+          isContinuousVoiceActive: true,
+          voiceModeStatus: 'listening',
+          voiceUserTranscript: '',
+          voiceAiTranscript: '',
+          voiceVolumeLevel: 0,
+          voiceIsMuted: false,
+        }),
+      stopContinuousVoice: () =>
+        set({
+          isContinuousVoiceActive: false,
+          voiceModeStatus: 'idle',
+          voiceUserTranscript: '',
+          voiceAiTranscript: '',
+          voiceVolumeLevel: 0,
+        }),
+      setVoiceModeStatus: (status) => set({ voiceModeStatus: status }),
+      setVoiceUserTranscript: (text) => set({ voiceUserTranscript: text }),
+      setVoiceAiTranscript: (text) => set({ voiceAiTranscript: text }),
+      setVoiceVolumeLevel: (vol) => set({ voiceVolumeLevel: vol }),
+      toggleVoiceMute: () => set((state) => ({ voiceIsMuted: !state.voiceIsMuted })),
 
       currentUser: null,
       userProfile: null,
