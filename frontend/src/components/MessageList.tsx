@@ -12,9 +12,10 @@ import { InlineChatPopup } from './InlineChatPopup'
 import type { InlineAnnotation } from '@/store/appStore'
 import {
   Copy, ThumbsUp, ThumbsDown, RotateCcw, Volume2, Check,
-  VolumeX, MessageSquarePlus, FileText
+  VolumeX, MessageSquarePlus, FileText, Code2, Download, X
 } from 'lucide-react'
 import { generateResponsePdf } from '@/lib/pdfGenerator'
+import { formatFileSize } from '@/lib/fileProcessor'
 import toast from 'react-hot-toast'
 
 interface SelectionState {
@@ -42,6 +43,7 @@ export function MessageList() {
   const [playingId, setPlayingId] = useState<string | null>(null)
   const [copiedId, setCopiedId] = useState<string | null>(null)
   const [generatingPdfId, setGeneratingPdfId] = useState<string | null>(null)
+  const [selectedImage, setSelectedImage] = useState<{ url: string; name: string } | null>(null)
   const audioRef = useRef<HTMLAudioElement | null>(null)
 
   useEffect(() => {
@@ -245,7 +247,64 @@ export function MessageList() {
               )}
 
               {msg.role === 'user' ? (
-                <div className="user-bubble">{msg.content}</div>
+                <div className="user-bubble">
+                  {/* Attached files and images */}
+                  {msg.attachments && msg.attachments.length > 0 && (
+                    <div className="message-attachments-container">
+                      {msg.attachments.map((att) => {
+                        if (att.type === 'image' && (att.dataUrl || att.base64)) {
+                          const src = att.dataUrl || `data:${att.mimeType || 'image/jpeg'};base64,${att.base64}`
+                          return (
+                            <div
+                              key={att.id}
+                              className="message-image-card"
+                              onClick={() => setSelectedImage({ url: src, name: att.name })}
+                              title="Click to view full image"
+                            >
+                              <img src={src} alt={att.name} className="message-attached-image" />
+                              <div className="message-image-overlay">
+                                <span className="message-image-name">{att.name}</span>
+                              </div>
+                            </div>
+                          )
+                        }
+
+                        return (
+                          <div key={att.id} className={`message-doc-card ${att.type}`}>
+                            <div className="message-doc-icon">
+                              {att.type === 'code' ? <Code2 size={16} /> : <FileText size={16} />}
+                            </div>
+                            <div className="message-doc-info">
+                              <span className="message-doc-name" title={att.name}>{att.name}</span>
+                              <span className="message-doc-size">{formatFileSize(att.size)}</span>
+                            </div>
+                          </div>
+                        )
+                      })}
+                    </div>
+                  )}
+
+                  {/* Fallback for raw base64 images without attachments array */}
+                  {(!msg.attachments || msg.attachments.length === 0) && msg.images && msg.images.length > 0 && (
+                    <div className="message-attachments-container">
+                      {msg.images.map((imgBase64, imgIdx) => {
+                        const src = `data:image/jpeg;base64,${imgBase64}`
+                        return (
+                          <div
+                            key={imgIdx}
+                            className="message-image-card"
+                            onClick={() => setSelectedImage({ url: src, name: `Image ${imgIdx + 1}` })}
+                            title="Click to view full image"
+                          >
+                            <img src={src} alt={`Image ${imgIdx + 1}`} className="message-attached-image" />
+                          </div>
+                        )
+                      })}
+                    </div>
+                  )}
+
+                  {msg.content && <div className="user-text-content">{msg.content}</div>}
+                </div>
               ) : (
                 <div
                   className="assistant-content"
