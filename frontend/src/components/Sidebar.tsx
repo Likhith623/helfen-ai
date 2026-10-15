@@ -2,11 +2,11 @@
 
 import { useEffect, useRef, useState } from 'react'
 import { useAppStore } from '@/store/appStore'
-import { supabase } from '@/lib/supabase'
+import { supabase, getConversationContextData } from '@/lib/supabase'
 import {
   Menu, Plus, MessageSquare, Search, Sparkles,
   Image, Video, BookOpen, Timer, Settings,
-  MoreHorizontal, Pin, Trash2, NotebookPen
+  MoreHorizontal, Pin, Trash2, NotebookPen, Link2
 } from 'lucide-react'
 import toast from 'react-hot-toast'
 
@@ -15,7 +15,8 @@ export function Sidebar() {
     sidebarOpen, setSidebarOpen,
     activeConversationId, setActiveConversationId,
     conversations, setConversations, addConversation, removeConversation,
-    updateConversation, isTemporaryChat, setIsTemporaryChat, setMessages
+    updateConversation, isTemporaryChat, setIsTemporaryChat, setMessages,
+    startNewChatWithContinuation, setContinuationParent
   } = useAppStore()
 
   const [searchQuery, setSearchQuery] = useState('')
@@ -61,6 +62,25 @@ export function Sidebar() {
     await supabase.from('conversations').update({ is_pinned: !pinned }).eq('id', id)
     updateConversation(id, { is_pinned: !pinned })
     setActiveMenu(null)
+  }
+
+  async function handleContinueChat(convId: string, title: string) {
+    setActiveMenu(null)
+    startNewChatWithContinuation(convId, title)
+    try {
+      const data = await getConversationContextData(convId)
+      setContinuationParent(convId, title, data.messagesCount, data.formattedContext)
+    } catch (err) {
+      console.error('Failed to load continuation context data:', err)
+    }
+    toast.success(`Context linked: "${title}"`, {
+      icon: '🔗',
+      style: {
+        background: 'var(--bg-card)',
+        color: 'var(--text-primary)',
+        border: '1px solid var(--border)'
+      }
+    })
   }
 
   const filtered = conversations.filter(c =>
@@ -195,6 +215,7 @@ export function Sidebar() {
                     onClick={() => { setActiveConversationId(conv.id); setIsTemporaryChat(false) }}
                     onDelete={() => deleteConversation(conv.id)}
                     onPin={() => pinConversation(conv.id, conv.is_pinned)}
+                    onContinue={() => handleContinueChat(conv.id, conv.title)}
                     activeMenu={activeMenu}
                     setActiveMenu={setActiveMenu}
                     menuRef={menuRef}
@@ -227,13 +248,14 @@ export function Sidebar() {
 }
 
 function ConvItem({
-  conv, active, onClick, onDelete, onPin, activeMenu, setActiveMenu, menuRef
+  conv, active, onClick, onDelete, onPin, onContinue, activeMenu, setActiveMenu, menuRef
 }: {
   conv: { id: string; title: string; is_pinned: boolean }
   active: boolean
   onClick: () => void
   onDelete: () => void
   onPin: () => void
+  onContinue: () => void
   activeMenu: string | null
   setActiveMenu: (id: string | null) => void
   menuRef: React.RefObject<HTMLDivElement | null>
@@ -257,6 +279,9 @@ function ConvItem({
         </button>
         {activeMenu === conv.id && (
           <div ref={menuRef} className="dropdown" style={{ right: 0, top: '100%' }}>
+            <button className="dropdown-item" onClick={onContinue}>
+              <Link2 size={13} />Continue in new chat
+            </button>
             <button className="dropdown-item" onClick={onPin}>
               <Pin size={13} />{conv.is_pinned ? 'Unpin' : 'Pin'}
             </button>
