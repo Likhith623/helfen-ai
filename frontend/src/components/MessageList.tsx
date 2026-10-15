@@ -400,6 +400,38 @@ export function MessageList() {
           onClose={() => setInlineChat(null)}
         />
       )}
+
+      {/* Lightbox Image Preview Modal */}
+      {selectedImage && (
+        <div className="image-lightbox-backdrop" onClick={() => setSelectedImage(null)}>
+          <div className="image-lightbox-content" onClick={(e) => e.stopPropagation()}>
+            <div className="image-lightbox-header">
+              <span className="image-lightbox-title">{selectedImage.name}</span>
+              <div className="image-lightbox-actions">
+                <a
+                  href={selectedImage.url}
+                  download={selectedImage.name}
+                  className="image-lightbox-btn"
+                  title="Download image"
+                >
+                  <Download size={16} />
+                </a>
+                <button
+                  type="button"
+                  className="image-lightbox-btn"
+                  onClick={() => setSelectedImage(null)}
+                  title="Close preview"
+                >
+                  <X size={16} />
+                </button>
+              </div>
+            </div>
+            <div className="image-lightbox-body">
+              <img src={selectedImage.url} alt={selectedImage.name} className="image-lightbox-img" />
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }
