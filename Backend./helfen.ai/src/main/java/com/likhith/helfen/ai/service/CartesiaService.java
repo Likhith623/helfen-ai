@@ -20,18 +20,28 @@ public class CartesiaService {
     }
 
     public Flux<DataBuffer> streamAudio(TtsRequest request) {
-        String text = request.getText();
-        if (text != null && text.length() > 1000) {
-            text = text.substring(0, 1000);
+        String rawText = request.getText();
+        if (rawText == null || rawText.isBlank()) {
+            return Flux.empty();
         }
 
+        // Clean markdown syntax for natural voice synthesis
+        String cleanText = cleanMarkdownForSpeech(rawText);
+        if (cleanText.length() > 2500) {
+            cleanText = cleanText.substring(0, 2500);
+        }
+
+        String voiceId = (request.getVoice() != null && !request.getVoice().isBlank())
+                ? request.getVoice()
+                : "694f9389-aac1-45b6-b726-9d9369183238"; // Natural British / Conversational voice
+
         Map<String, Object> requestBody = new HashMap<>();
-        requestBody.put("transcript", text);
+        requestBody.put("transcript", cleanText);
         requestBody.put("model_id", "sonic-english");
         
         Map<String, Object> voice = new HashMap<>();
         voice.put("mode", "id");
-        voice.put("id", "694f9389-aac1-45b6-b726-9d9369183238"); // Default voice ID
+        voice.put("id", voiceId);
         requestBody.put("voice", voice);
 
         Map<String, Object> outputFormat = new HashMap<>();
@@ -44,5 +54,18 @@ public class CartesiaService {
                 .bodyValue(requestBody)
                 .retrieve()
                 .bodyToFlux(DataBuffer.class);
+    }
+
+    private String cleanMarkdownForSpeech(String md) {
+        if (md == null) return "";
+        return md
+                .replaceAll("```[\\s\\S]*?```", " Code snippet omitted for voice. ")
+                .replaceAll("`([^`]+)`", "$1")
+                .replaceAll("#+\\s*", "")
+                .replaceAll("\\[([^\\]]+)\\]\\([^\\)]+\\)", "$1")
+                .replaceAll("[*_~]{1,3}", "")
+                .replaceAll("^[\\s*-]+", "")
+                .replaceAll("\\n+", " ")
+                .trim();
     }
 }
