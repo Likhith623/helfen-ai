@@ -12,8 +12,9 @@ import { InlineChatPopup } from './InlineChatPopup'
 import type { InlineAnnotation } from '@/store/appStore'
 import {
   Copy, ThumbsUp, ThumbsDown, RotateCcw, Volume2, Check,
-  VolumeX, MessageSquarePlus
+  VolumeX, MessageSquarePlus, FileText
 } from 'lucide-react'
+import { generateResponsePdf } from '@/lib/pdfGenerator'
 import toast from 'react-hot-toast'
 
 interface SelectionState {
@@ -33,13 +34,14 @@ interface InlineChatState {
 }
 
 export function MessageList() {
-  const { messages, isStreaming, streamingMessageId, annotations, voiceEnabled } = useAppStore()
+  const { messages, isStreaming, streamingMessageId, annotations, voiceEnabled, conversations } = useAppStore()
   const bottomRef = useRef<HTMLDivElement>(null)
   const containerRef = useRef<HTMLDivElement>(null)
   const [selection, setSelection] = useState<SelectionState | null>(null)
   const [inlineChat, setInlineChat] = useState<InlineChatState | null>(null)
   const [playingId, setPlayingId] = useState<string | null>(null)
   const [copiedId, setCopiedId] = useState<string | null>(null)
+  const [generatingPdfId, setGeneratingPdfId] = useState<string | null>(null)
   const audioRef = useRef<HTMLAudioElement | null>(null)
 
   useEffect(() => {
@@ -175,6 +177,32 @@ export function MessageList() {
     toast.success('Copied!')
   }
 
+  async function handleGeneratePdf(msg: any, promptMsg?: any) {
+    setGeneratingPdfId(msg.id)
+    try {
+      const activeConv = conversations.find((c) => c.id === msg.conversation_id)
+      await generateResponsePdf(msg.content, {
+        title: activeConv?.title || 'Helfen AI Response',
+        prompt: promptMsg?.content,
+        model: msg.model || 'llama3.2:3b',
+        createdAt: msg.created_at
+      })
+      toast.success('PDF generated and downloaded!', {
+        icon: '📄',
+        style: {
+          background: 'var(--bg-card)',
+          color: 'var(--text-primary)',
+          border: '1px solid var(--border)'
+        }
+      })
+    } catch (err) {
+      console.error('Failed to generate PDF:', err)
+      toast.error('Failed to generate PDF')
+    } finally {
+      setGeneratingPdfId(null)
+    }
+  }
+
   function openExistingAnnotation(ann: InlineAnnotation) {
     const msgEl = document.querySelector(`[data-message-id="${ann.message_id}"]`)
     const msgRect = msgEl?.getBoundingClientRect()
@@ -185,7 +213,7 @@ export function MessageList() {
   return (
     <div className="messages-container" ref={containerRef}>
       <div className="messages-inner">
-        {messages.map((msg) => {
+        {messages.map((msg, idx) => {
           const msgAnnotations = annotations[msg.id] || []
 
           return (
@@ -253,6 +281,26 @@ export function MessageList() {
                       </button>
                       <button className="action-btn" title="Retry">
                         <RotateCcw size={14} />
+                      </button>
+
+                      {/* Generate a PDF button */}
+                      <button
+                        className={`action-btn generate-pdf-btn ${generatingPdfId === msg.id ? 'loading' : ''}`}
+                        onClick={() => {
+                          const promptMsg = idx > 0 ? messages.slice(0, idx).reverse().find(m => m.role === 'user') : undefined
+                          handleGeneratePdf(msg, promptMsg)
+                        }}
+                        title="Generate a PDF of this response"
+                        disabled={generatingPdfId === msg.id}
+                      >
+                        {generatingPdfId === msg.id ? (
+                          <div className="pdf-btn-spinner" />
+                        ) : (
+                          <>
+                            <FileText size={13} />
+                            <span>Generate a PDF</span>
+                          </>
+                        )}
                       </button>
                     </div>
                   )}
