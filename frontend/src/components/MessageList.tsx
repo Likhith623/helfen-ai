@@ -12,7 +12,8 @@ import { InlineChatPopup } from './InlineChatPopup'
 import type { InlineAnnotation } from '@/store/appStore'
 import {
   Copy, ThumbsUp, ThumbsDown, RotateCcw, Volume2, Check,
-  VolumeX, MessageSquarePlus, FileText, Code2, Download, X
+  VolumeX, MessageSquarePlus, FileText, Code2, Download, X,
+  BookOpen
 } from 'lucide-react'
 import { generateResponsePdf } from '@/lib/pdfGenerator'
 import { formatFileSize } from '@/lib/fileProcessor'
@@ -35,7 +36,10 @@ interface InlineChatState {
 }
 
 export function MessageList() {
-  const { messages, isStreaming, streamingMessageId, annotations, voiceEnabled, conversations } = useAppStore()
+  const {
+    messages, isStreaming, streamingMessageId, annotations,
+    voiceEnabled, conversations, openRagInspector
+  } = useAppStore()
   const bottomRef = useRef<HTMLDivElement>(null)
   const containerRef = useRef<HTMLDivElement>(null)
   const [selection, setSelection] = useState<SelectionState | null>(null)
@@ -321,6 +325,26 @@ export function MessageList() {
                       annotations={msgAnnotations}
                       onAnnotationClick={openExistingAnnotation}
                     />
+                  )}
+
+                  {/* RAG Grounded Sources Citation Pill */}
+                  {msg.role === 'assistant' && msg.retrievedChunks && msg.retrievedChunks.length > 0 && (
+                    <div className="rag-citation-badge-wrap">
+                      <button
+                        type="button"
+                        className="rag-citation-badge"
+                        onClick={() => openRagInspector(msg.id, msg.retrievedChunks!)}
+                        title="View verified source excerpts that grounded this response"
+                      >
+                        <BookOpen size={13} className="text-blue" />
+                        <span className="rag-badge-title">
+                          Grounded in {msg.retrievedChunks.length} Source{msg.retrievedChunks.length > 1 ? 's' : ''}
+                        </span>
+                        <span className="rag-badge-score">
+                          {Math.round(Math.max(...msg.retrievedChunks.map((c) => c.score || 0)) * 100)}% match
+                        </span>
+                      </button>
+                    </div>
                   )}
 
                   {/* Message actions */}
