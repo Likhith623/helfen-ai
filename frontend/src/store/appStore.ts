@@ -45,6 +45,7 @@ export interface Conversation {
   is_temporary: boolean
   is_archived: boolean
   is_pinned: boolean
+  parent_conversation_id?: string | null
   created_at: string
   updated_at: string
 }
@@ -56,6 +57,22 @@ interface AppState {
 
   activeConversationId: string | null
   setActiveConversationId: (id: string | null) => void
+
+  /* Continuation context state */
+  continuationParentId: string | null
+  continuationParentTitle: string | null
+  continuationMessagesCount: number
+  continuationContextText: string | null
+  isContextModalOpen: boolean
+  setContinuationParent: (
+    id: string | null,
+    title?: string | null,
+    msgCount?: number,
+    contextText?: string | null
+  ) => void
+  clearContinuationParent: () => void
+  setIsContextModalOpen: (open: boolean) => void
+  startNewChatWithContinuation: (parentId: string, parentTitle: string) => void
 
   conversations: Conversation[]
   setConversations: (conversations: Conversation[]) => void
@@ -100,7 +117,51 @@ export const useAppStore = create<AppState>()(
       toggleTheme: () => set((state) => ({ theme: state.theme === 'dark' ? 'light' : 'dark' })),
 
       activeConversationId: null,
-      setActiveConversationId: (id) => set({ activeConversationId: id, messages: [] }),
+      setActiveConversationId: (id) =>
+        set({
+          activeConversationId: id,
+          messages: [],
+          // Clear continuation state when loading an existing conversation
+          continuationParentId: null,
+          continuationParentTitle: null,
+          continuationMessagesCount: 0,
+          continuationContextText: null,
+        }),
+
+      continuationParentId: null,
+      continuationParentTitle: null,
+      continuationMessagesCount: 0,
+      continuationContextText: null,
+      isContextModalOpen: false,
+
+      setContinuationParent: (id, title = null, msgCount = 0, contextText = null) =>
+        set({
+          continuationParentId: id,
+          continuationParentTitle: title,
+          continuationMessagesCount: msgCount,
+          continuationContextText: contextText,
+        }),
+
+      clearContinuationParent: () =>
+        set({
+          continuationParentId: null,
+          continuationParentTitle: null,
+          continuationMessagesCount: 0,
+          continuationContextText: null,
+        }),
+
+      setIsContextModalOpen: (open) => set({ isContextModalOpen: open }),
+
+      startNewChatWithContinuation: (parentId, parentTitle) =>
+        set({
+          activeConversationId: null,
+          messages: [],
+          isTemporaryChat: false,
+          continuationParentId: parentId,
+          continuationParentTitle: parentTitle,
+          continuationMessagesCount: 0,
+          continuationContextText: null,
+        }),
 
       conversations: [],
       setConversations: (conversations) => set({ conversations }),
