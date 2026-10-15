@@ -5,6 +5,7 @@ import { Sidebar } from '@/components/Sidebar'
 import { MessageList } from '@/components/MessageList'
 import { ChatInput } from '@/components/ChatInput'
 import { AuthModal } from '@/components/AuthModal'
+import { PromptTemplateModal } from '@/components/PromptTemplateModal'
 import { AccountPopover } from '@/components/AccountPopover'
 import { useAppStore } from '@/store/appStore'
 import { supabase, getConversationContextData } from '@/lib/supabase'
@@ -315,6 +316,9 @@ export default function Home() {
 
       {/* ── AUTHENTICATION MODAL ── */}
       <AuthModal />
+
+      {/* ── PROMPT TEMPLATE & SLASH COMMANDS MODAL ── */}
+      <PromptTemplateModal />
     </div>
   )
 }
