@@ -11,6 +11,18 @@ export interface UserProfile {
   avatar_url?: string | null
 }
 
+export interface MessageAttachment {
+  id: string
+  name: string
+  type: 'image' | 'document' | 'code'
+  size: number
+  mimeType: string
+  dataUrl?: string
+  base64?: string
+  text?: string
+  tokenCount?: number
+}
+
 export interface Message {
   id: string
   conversation_id: string
@@ -21,6 +33,8 @@ export interface Message {
   is_edited?: boolean
   created_at: string
   annotations?: InlineAnnotation[]
+  attachments?: MessageAttachment[]
+  images?: string[]
 }
 
 export interface InlineAnnotation {
@@ -115,6 +129,12 @@ interface AppState {
 
   voiceEnabled: boolean
   setVoiceEnabled: (v: boolean) => void
+
+  /* Multi-modal Attachments State */
+  pendingAttachments: MessageAttachment[]
+  addPendingAttachment: (att: MessageAttachment) => void
+  removePendingAttachment: (id: string) => void
+  clearPendingAttachments: () => void
 
   /* Auth State */
   currentUser: { id: string; email?: string } | null
@@ -242,6 +262,15 @@ export const useAppStore = create<AppState>()(
 
       voiceEnabled: true,
       setVoiceEnabled: (v) => set({ voiceEnabled: v }),
+
+      pendingAttachments: [],
+      addPendingAttachment: (att) =>
+        set((state) => ({ pendingAttachments: [...state.pendingAttachments, att] })),
+      removePendingAttachment: (id) =>
+        set((state) => ({
+          pendingAttachments: state.pendingAttachments.filter((a) => a.id !== id),
+        })),
+      clearPendingAttachments: () => set({ pendingAttachments: [] }),
 
       currentUser: null,
       userProfile: null,
