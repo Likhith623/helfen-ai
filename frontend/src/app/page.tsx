@@ -10,8 +10,9 @@ import { useAppStore } from '@/store/appStore'
 import { supabase, getConversationContextData } from '@/lib/supabase'
 import {
   Sun, Moon, Volume2, VolumeX, History,
-  Download, Edit, Sparkles, Menu, Link2, LogIn
+  Download, Edit, Sparkles, Menu, Link2, LogIn, FileText
 } from 'lucide-react'
+import { generateConversationPdf } from '@/lib/pdfGenerator'
 
 const SUGGESTIONS = [
   { icon: '✏️', label: 'Design a book cover for my life story' },
@@ -24,13 +25,14 @@ export default function Home() {
     theme, toggleTheme, sidebarOpen, setSidebarOpen,
     activeConversationId, setMessages, messages,
     voiceEnabled, setVoiceEnabled, isTemporaryChat,
-    setAnnotations, conversations,
+    setAnnotations, conversations, selectedModel,
     continuationParentId, continuationParentTitle,
     setIsContextModalOpen, startNewChatWithContinuation, setContinuationParent,
     currentUser, userProfile, setCurrentUser, setUserProfile, setIsAuthModalOpen
   } = useAppStore()
 
   const [isAccountOpen, setIsAccountOpen] = useState(false)
+  const [isExportingPdf, setIsExportingPdf] = useState(false)
 
   /* Listen to Supabase Auth State */
   useEffect(() => {
@@ -163,6 +165,32 @@ export default function Home() {
             <button className="icon-btn" onClick={toggleTheme} title="Toggle theme">
               {theme === 'dark' ? <Sun size={18} /> : <Moon size={18} />}
             </button>
+
+            {/* Export full conversation as PDF */}
+            {messages.length > 0 && (
+              <button
+                className="icon-btn"
+                title="Export conversation as PDF"
+                disabled={isExportingPdf}
+                onClick={async () => {
+                  try {
+                    setIsExportingPdf(true)
+                    const activeConv = conversations.find(c => c.id === activeConversationId)
+                    const title = activeConv?.title || 'Conversation Thread'
+                    await generateConversationPdf(messages, {
+                      title,
+                      model: selectedModel,
+                    })
+                  } catch (err) {
+                    console.error('Failed to export conversation PDF:', err)
+                  } finally {
+                    setIsExportingPdf(false)
+                  }
+                }}
+              >
+                <FileText size={18} />
+              </button>
+            )}
 
             {/* Branch / Continue this chat in a new session */}
             {activeConversationId && (

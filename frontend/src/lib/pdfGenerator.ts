@@ -316,3 +316,131 @@ export async function generateResponsePdf(
   const filename = `helfen-${sanitizedTitle}-${Date.now().toString().slice(-4)}.pdf`
   doc.save(filename)
 }
+
+export interface ConversationPdfExportOptions {
+  title?: string
+  model?: string
+  createdAt?: string
+}
+
+/**
+ * Generates and downloads a complete conversation thread as a styled PDF document
+ */
+export async function generateConversationPdf(
+  messages: Array<{ role: string; content: string; created_at?: string; model?: string | null }>,
+  options: ConversationPdfExportOptions = {}
+): Promise<void> {
+  if (!messages || messages.length === 0) return
+
+  const doc = new jsPDF({
+    orientation: 'portrait',
+    unit: 'mm',
+    format: 'a4'
+  })
+
+  const pageWidth = doc.internal.pageSize.getWidth()
+  const pageHeight = doc.internal.pageSize.getHeight()
+  const contentWidth = pageWidth - 36 // 18mm margins
+  const maxY = pageHeight - 20
+
+  const title = options.title || 'Complete Chat Thread'
+  const model = options.model || 'llama3.2:3b'
+  const dateStr = options.createdAt
+    ? new Date(options.createdAt).toLocaleString(undefined, {
+        dateStyle: 'medium',
+        timeStyle: 'short'
+      })
+    : new Date().toLocaleString(undefined, {
+        dateStyle: 'medium',
+        timeStyle: 'short'
+      })
+
+  let currentY = drawHeader(doc, title, model, dateStr)
+
+  for (let idx = 0; idx < messages.length; idx++) {
+    const msg = messages[idx]
+
+    if (msg.role === 'user') {
+      const ensureSpace = (needed: number) => {
+        if (currentY + needed > maxY) {
+          doc.addPage()
+          doc.setFillColor(66, 133, 244)
+          doc.rect(0, 0, pageWidth, 3, 'F')
+          currentY = 20
+        }
+      }
+
+      const timeLabel = msg.created_at
+        ? ` (${new Date(msg.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })})`
+        : ''
+
+      doc.setFont('helvetica', 'normal')
+      doc.setFontSize(9.5)
+      const textLines = doc.splitTextToSize(msg.content, contentWidth - 10)
+      const boxHeight = textLines.length * 4.8 + 10
+      ensureSpace(boxHeight + 5)
+
+      doc.setFillColor(243, 246, 252)
+      doc.setDrawColor(218, 226, 240)
+      doc.setLineWidth(0.3)
+      doc.roundedRect(18, currentY, contentWidth, boxHeight, 2, 2, 'FD')
+
+      doc.setFont('helvetica', 'bold')
+      doc.setFontSize(9)
+      doc.setTextColor(30, 80, 160)
+      doc.text(`User${timeLabel}:`, 22, currentY + 5)
+
+      doc.setFont('helvetica', 'normal')
+      doc.setFontSize(9.5)
+      doc.setTextColor(33, 37, 41)
+      let lineY = currentY + 9.5
+      for (const line of textLines) {
+        doc.text(line, 22, lineY)
+        lineY += 4.8
+      }
+
+      currentY += boxHeight + 5
+    } else if (msg.role === 'assistant') {
+      if (currentY + 12 > maxY) {
+        doc.addPage()
+        doc.setFillColor(66, 133, 244)
+        doc.rect(0, 0, pageWidth, 3, 'F')
+        currentY = 20
+      }
+
+      const timeLabel = msg.created_at
+        ? ` • ${new Date(msg.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`
+        : ''
+
+      doc.setFont('helvetica', 'bold')
+      doc.setFontSize(9.5)
+      doc.setTextColor(66, 133, 244)
+      doc.text(`Helfen.AI (${msg.model || model})${timeLabel}`, 18, currentY + 4)
+      currentY += 6
+
+      currentY = renderMarkdownContent(doc, msg.content, currentY, contentWidth, maxY)
+      currentY += 6
+
+      // Divider line between conversation turns if not the last
+      if (idx < messages.length - 1) {
+        if (currentY + 6 <= maxY) {
+          doc.setDrawColor(230, 235, 245)
+          doc.setLineWidth(0.3)
+          doc.line(18, currentY, pageWidth - 18, currentY)
+          currentY += 6
+        }
+      }
+    }
+  }
+
+  drawFooters(doc)
+
+  const sanitizedTitle = (options.title || 'conversation')
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '-')
+    .slice(0, 30)
+
+  const filename = `helfen-thread-${sanitizedTitle}-${Date.now().toString().slice(-4)}.pdf`
+  doc.save(filename)
+}
+
