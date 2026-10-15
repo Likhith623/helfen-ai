@@ -56,7 +56,8 @@ export function ChatInput() {
     continuationContextText, clearContinuationParent, setIsContextModalOpen,
     pendingAttachments, addPendingAttachment, removePendingAttachment, clearPendingAttachments,
     customTemplates, setCustomTemplates, setIsTemplateManagerOpen,
-    ragModeEnabled, knowledgeDocuments, addKnowledgeDocument, setIsKnowledgeBaseOpen
+    ragModeEnabled, knowledgeDocuments, addKnowledgeDocument, setIsKnowledgeBaseOpen,
+    isContinuousVoiceActive, startContinuousVoice, stopContinuousVoice
   } = useAppStore()
 
   /* Auto-resize textarea */
@@ -670,30 +671,27 @@ export function ChatInput() {
                   )}
                 </div>
 
-                {/* Mic */}
-                {isRecording ? (
-                  <div className="voice-recording">
-                    <div className="voice-pulse" />
-                    <button
-                      type="button"
-                      className="icon-btn"
-                      onClick={() => setIsRecording(false)}
-                      style={{ width: 32, height: 32 }}
-                    >
-                      <StopCircle size={16} />
-                    </button>
-                  </div>
-                ) : (
-                  <button
-                    type="button"
-                    className="icon-btn"
-                    title="Use microphone"
-                    onClick={() => setIsRecording(true)}
-                    disabled={isStreaming}
-                  >
-                    <Mic size={18} />
-                  </button>
-                )}
+                {/* Continuous Two-Way Voice Mode (Like ChatGPT Voice) */}
+                <button
+                  type="button"
+                  className={`icon-btn mic-btn ${isContinuousVoiceActive ? 'voice-active' : ''}`}
+                  title={
+                    isContinuousVoiceActive
+                      ? 'Continuous Voice Mode active - Click to stop'
+                      : 'Start Continuous Two-Way Voice Mode (ChatGPT style)'
+                  }
+                  onClick={() => {
+                    if (isContinuousVoiceActive) {
+                      stopContinuousVoice()
+                    } else {
+                      startContinuousVoice()
+                    }
+                  }}
+                  disabled={isStreaming}
+                >
+                  <Mic size={18} />
+                  {isContinuousVoiceActive && <span className="voice-mic-ping" />}
+                </button>
 
                 {/* Send */}
                 <button
