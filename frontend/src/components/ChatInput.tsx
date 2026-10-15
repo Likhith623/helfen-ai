@@ -1,23 +1,32 @@
 'use client'
  
 import { useState, useRef, useEffect } from 'react'
-import { Send, Mic, StopCircle, ChevronDown, Plus, Link2, X } from 'lucide-react'
+import {
+  Send, Mic, StopCircle, ChevronDown, Plus, Link2, X,
+  FileText, Code2, Loader2
+} from 'lucide-react'
 import { useAppStore } from '@/store/appStore'
 import { supabase, getConversationContextData } from '@/lib/supabase'
 import { ChatContextModal } from '@/components/ChatContextModal'
+import { processUploadedFile, formatAttachmentsContext, formatFileSize } from '@/lib/fileProcessor'
+import toast from 'react-hot-toast'
 
 export function ChatInput() {
   const [input, setInput] = useState('')
   const [isRecording, setIsRecording] = useState(false)
+  const [isDragging, setIsDragging] = useState(false)
+  const [isProcessingFiles, setIsProcessingFiles] = useState(false)
   const textareaRef = useRef<HTMLTextAreaElement>(null)
+  const fileInputRef = useRef<HTMLInputElement>(null)
 
   const {
     isStreaming, setIsStreaming,
     addMessage, activeConversationId, setActiveConversationId,
-    messages, selectedModel, isTemporaryChat,
+    messages, selectedModel, isTemporaryChat, setSelectedModel,
     setStreamingMessageId, updateMessage, addConversation,
     continuationParentId, continuationParentTitle, continuationMessagesCount,
-    continuationContextText, clearContinuationParent, setIsContextModalOpen
+    continuationContextText, clearContinuationParent, setIsContextModalOpen,
+    pendingAttachments, addPendingAttachment, removePendingAttachment, clearPendingAttachments
   } = useAppStore()
 
   /* Auto-resize textarea */
@@ -37,13 +46,61 @@ export function ChatInput() {
     return () => el.removeEventListener('input', handler)
   }, [])
 
+  /* File upload and processing handlers */
+  async function handleFiles(files: FileList | File[]) {
+    if (!files || files.length === 0) return
+    setIsProcessingFiles(true)
+    const fileList = Array.from(files)
+
+    for (const file of fileList) {
+      try {
+        const attachment = await processUploadedFile(file)
+        addPendingAttachment(attachment)
+        toast.success(`Attached "${file.name}"`, {
+          icon: attachment.type === 'image' ? '🖼️' : attachment.type === 'code' ? '💻' : '📄',
+          duration: 2500,
+          style: {
+            background: 'var(--bg-card)',
+            color: 'var(--text-primary)',
+            border: '1px solid var(--border)'
+          }
+        })
+      } catch (err) {
+        console.error('File processing error:', err)
+        toast.error(`Failed to process ${file.name}`)
+      }
+    }
+    setIsProcessingFiles(false)
+  }
+
+  function handleFileSelect(e: React.ChangeEvent<HTMLInputElement>) {
+    if (e.target.files) {
+      handleFiles(e.target.files)
+      e.target.value = ''
+    }
+  }
+
   async function handleSubmit(e?: React.FormEvent) {
     e?.preventDefault()
-    if (!input.trim() || isStreaming) return
-
     const content = input.trim()
+    if ((!content && pendingAttachments.length === 0) || isStreaming) return
+
+    const currentAttachments = [...pendingAttachments]
+    clearPendingAttachments()
     setInput('')
     if (textareaRef.current) textareaRef.current.style.height = '24px'
+
+    const { formattedContext: docsContext, images: extractedImages } =
+      formatAttachmentsContext(currentAttachments)
+
+    let finalPromptContent = content
+    if (docsContext) {
+      finalPromptContent = content
+        ? `${docsContext}\n\n${content}`
+        : `${docsContext}\n\nPlease analyze the attached document(s) and provide a comprehensive summary with key takeaways.`
+    } else if (!content && extractedImages.length > 0) {
+      finalPromptContent = 'Please inspect and describe this image in detail.'
+    }
 
     let convId = activeConversationId
     let resolvedContext = continuationContextText
@@ -62,7 +119,8 @@ export function ChatInput() {
     if (!convId && !isTemporaryChat) {
       const { data: { user } } = await supabase.auth.getUser()
       if (user) {
-        const title = content.slice(0, 40) + (content.length > 40 ? '…' : '')
+        const titleText = content || (currentAttachments.length > 0 ? `Analysis: ${currentAttachments[0].name}` : 'New Chat')
+        const title = titleText.slice(0, 40) + (titleText.length > 40 ? '…' : '')
         const insertPayload: any = {
           user_id: user.id,
           title,
@@ -107,15 +165,29 @@ export function ChatInput() {
       id: userMsgId,
       conversation_id: convId || 'temp',
       role: 'user' as const,
-      content,
+      content: content || (currentAttachments.length > 0 ? `Attached ${currentAttachments.length} file(s)` : ''),
+      attachments: currentAttachments.length > 0 ? currentAttachments : undefined,
+      images: extractedImages.length > 0 ? extractedImages : undefined,
       created_at: new Date().toISOString()
     }
     addMessage(userMsg)
 
     if (convId && !isTemporaryChat) {
-      supabase.from('messages').insert({
-        id: userMsgId, conversation_id: convId, role: 'user', content
-      }).then()
+      const payload: any = {
+        id: userMsgId,
+        conversation_id: convId,
+        role: 'user',
+        content: userMsg.content,
+      }
+      if (currentAttachments.length > 0) {
+        payload.attachments = currentAttachments
+      }
+      supabase.from('messages').insert(payload).then(({ error }) => {
+        if (error && currentAttachments.length > 0) {
+          delete payload.attachments
+          supabase.from('messages').insert(payload).then()
+        }
+      })
     }
 
     const aiMsgId = crypto.randomUUID()
@@ -144,7 +216,19 @@ export function ChatInput() {
           conversationId: convId,
           parentConversationId: continuationParentId || null,
           continuationContext: resolvedContext || null,
-          messages: [...messages, userMsg],
+          messages: [
+            ...messages.map((m) => ({
+              role: m.role,
+              content: m.content,
+              images: m.images || null
+            })),
+            {
+              role: 'user',
+              content: finalPromptContent,
+              images: extractedImages.length > 0 ? extractedImages : null
+            }
+          ],
+          images: extractedImages.length > 0 ? extractedImages : null,
           model: selectedModel,
           isTemporary: isTemporaryChat
         })
@@ -244,12 +328,38 @@ export function ChatInput() {
         )}
 
         {/* Glowing coloured border on focus */}
-        <div className="input-glow-wrapper">
+        <div className={`input-glow-wrapper ${isDragging ? 'drag-active' : ''}`}>
           <form onSubmit={handleSubmit}>
-            <div className="input-box">
+            <div
+              className="input-box"
+              onDragOver={(e) => { e.preventDefault(); setIsDragging(true) }}
+              onDragLeave={(e) => { e.preventDefault(); setIsDragging(false) }}
+              onDrop={(e) => {
+                e.preventDefault()
+                setIsDragging(false)
+                if (e.dataTransfer.files) handleFiles(e.dataTransfer.files)
+              }}
+            >
+              {/* Hidden file input for documents & images */}
+              <input
+                ref={fileInputRef}
+                type="file"
+                multiple
+                accept="image/*,.pdf,.txt,.md,.json,.csv,.py,.js,.ts,.tsx,.jsx,.html,.css,.java,.sql,.sh,.yml,.yaml,.xml"
+                style={{ display: 'none' }}
+                onChange={handleFileSelect}
+              />
+
               {/* Plus / attach button */}
-              <button type="button" className="icon-btn" title="Attach" style={{ flexShrink: 0, marginBottom: 0 }}>
-                <Plus size={18} />
+              <button
+                type="button"
+                className="icon-btn"
+                title="Attach files or images"
+                onClick={() => fileInputRef.current?.click()}
+                disabled={isProcessingFiles}
+                style={{ flexShrink: 0, marginBottom: 0 }}
+              >
+                {isProcessingFiles ? <Loader2 size={18} className="spin-icon" /> : <Plus size={18} />}
               </button>
 
               <textarea
@@ -258,7 +368,7 @@ export function ChatInput() {
                 value={input}
                 onChange={e => setInput(e.target.value)}
                 onKeyDown={handleKeyDown}
-                placeholder="Ask Helfen AI"
+                placeholder={isDragging ? 'Drop files here to analyze...' : 'Ask Helfen AI, attach files or images'}
                 rows={1}
                 disabled={isStreaming}
               />
@@ -318,8 +428,8 @@ export function ChatInput() {
                 {/* Send */}
                 <button
                   type="submit"
-                  className={`send-btn ${input.trim() && !isStreaming ? 'active' : ''}`}
-                  disabled={!input.trim() || isStreaming}
+                  className={`send-btn ${(input.trim() || pendingAttachments.length > 0) && !isStreaming ? 'active' : ''}`}
+                  disabled={(!input.trim() && pendingAttachments.length === 0) || isStreaming}
                   title="Send"
                 >
                   <Send size={16} />
