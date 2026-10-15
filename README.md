@@ -19,6 +19,24 @@ With Helfen AI's **Chat Continuation** feature:
 
 ---
 
+## 📄 PDF Generation & Export
+
+Helfen AI includes client-side PDF document generation powered by `jspdf`.
+
+### 1. Instant Response PDF Generation
+- After every assistant response, a dedicated **"Generate a PDF"** (`📄`) button appears in the message actions toolbar.
+- Clicking the button dynamically formats and generates a publication-ready PDF containing:
+  - **Header & Branding:** Helfen AI header bar, model name, and timestamp.
+  - **Prompt Context:** Automatically captures and boxes the preceding user prompt.
+  - **Formatted Markdown & Code:** Headings, bullet points, and code blocks rendered in courier styled background containers.
+  - **Multi-page Layout:** Dynamic text measurement with clean page breaks and running footers with total page counts.
+
+### 2. Full Conversation Thread Export
+- **Top Bar:** Click the document export icon in the top header to download the complete multi-turn chat session as a PDF.
+- **Sidebar:** In the chat history list, open the three-dots menu on any saved conversation and click **"Export as PDF"** to export it on demand.
+
+---
+
 ## 🔐 Email & Password Authentication (No Verification Links)
 
 Helfen AI features normal email/password authentication without any email verification links or third-party OAuth.
