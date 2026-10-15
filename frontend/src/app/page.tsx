@@ -12,7 +12,7 @@ import { useAppStore } from '@/store/appStore'
 import { supabase, getConversationContextData } from '@/lib/supabase'
 import {
   Sun, Moon, Volume2, VolumeX, History,
-  Download, Edit, Sparkles, Menu, Link2, LogIn, FileText
+  Download, Edit, Sparkles, Menu, Link2, LogIn, FileText, Share2
 } from 'lucide-react'
 import { generateConversationPdf } from '@/lib/pdfGenerator'
 
@@ -30,7 +30,8 @@ export default function Home() {
     setAnnotations, conversations, selectedModel,
     continuationParentId, continuationParentTitle,
     setIsContextModalOpen, startNewChatWithContinuation, setContinuationParent,
-    currentUser, userProfile, setCurrentUser, setUserProfile, setIsAuthModalOpen
+    currentUser, userProfile, setCurrentUser, setUserProfile, setIsAuthModalOpen,
+    openShareModal
   } = useAppStore()
 
   const [isAccountOpen, setIsAccountOpen] = useState(false)
@@ -191,6 +192,21 @@ export default function Home() {
                 }}
               >
                 <FileText size={18} />
+              </button>
+            )}
+
+            {/* Share Chat */}
+            {messages.length > 0 && (
+              <button
+                className="icon-btn"
+                title="Share conversation"
+                onClick={() => {
+                  const activeConv = conversations.find((c) => c.id === activeConversationId)
+                  const title = activeConv?.title || 'Shared Conversation'
+                  openShareModal(activeConversationId || '', title)
+                }}
+              >
+                <Share2 size={18} />
               </button>
             )}
 

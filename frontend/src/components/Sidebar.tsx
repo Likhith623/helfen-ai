@@ -6,7 +6,7 @@ import { supabase, getConversationContextData } from '@/lib/supabase'
 import {
   Menu, Plus, MessageSquare, Search, Sparkles,
   Image, Video, BookOpen, Timer, Settings,
-  MoreHorizontal, Pin, Trash2, NotebookPen, Link2, LogIn, FileText
+  MoreHorizontal, Pin, Trash2, NotebookPen, Link2, LogIn, FileText, Share2
 } from 'lucide-react'
 import { AccountPopover } from '@/components/AccountPopover'
 import { generateConversationPdf } from '@/lib/pdfGenerator'
@@ -19,7 +19,7 @@ export function Sidebar() {
     conversations, setConversations, addConversation, removeConversation,
     updateConversation, isTemporaryChat, setIsTemporaryChat, setMessages,
     startNewChatWithContinuation, setContinuationParent,
-    currentUser, userProfile, setIsAuthModalOpen
+    currentUser, userProfile, setIsAuthModalOpen, openShareModal
   } = useAppStore()
 
   const [searchQuery, setSearchQuery] = useState('')
@@ -249,6 +249,7 @@ export function Sidebar() {
                     onPin={() => pinConversation(conv.id, conv.is_pinned)}
                     onContinue={() => handleContinueChat(conv.id, conv.title)}
                     onExportPdf={() => handleExportChatPdf(conv.id, conv.title)}
+                    onShare={() => { setActiveMenu(null); openShareModal(conv.id, conv.title) }}
                     activeMenu={activeMenu}
                     setActiveMenu={setActiveMenu}
                     menuRef={menuRef}
@@ -314,7 +315,7 @@ export function Sidebar() {
 }
 
 function ConvItem({
-  conv, active, onClick, onDelete, onPin, onContinue, onExportPdf, activeMenu, setActiveMenu, menuRef
+  conv, active, onClick, onDelete, onPin, onContinue, onExportPdf, onShare, activeMenu, setActiveMenu, menuRef
 }: {
   conv: { id: string; title: string; is_pinned: boolean }
   active: boolean
@@ -323,6 +324,7 @@ function ConvItem({
   onPin: () => void
   onContinue: () => void
   onExportPdf: () => void
+  onShare: () => void
   activeMenu: string | null
   setActiveMenu: (id: string | null) => void
   menuRef: React.RefObject<HTMLDivElement | null>
@@ -351,6 +353,9 @@ function ConvItem({
             </button>
             <button className="dropdown-item" onClick={onExportPdf}>
               <FileText size={13} />Export as PDF
+            </button>
+            <button className="dropdown-item" onClick={onShare}>
+              <Share2 size={13} />Share chat
             </button>
             <button className="dropdown-item" onClick={onPin}>
               <Pin size={13} />{conv.is_pinned ? 'Unpin' : 'Pin'}
