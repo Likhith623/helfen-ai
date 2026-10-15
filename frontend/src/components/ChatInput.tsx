@@ -327,6 +327,58 @@ export function ChatInput() {
           </div>
         )}
 
+        {/* Multi-modal pending attachments strip */}
+        {pendingAttachments.length > 0 && (
+          <div className="pending-attachments-bar">
+            {pendingAttachments.map((att) => (
+              <div key={att.id} className={`pending-attachment-card ${att.type}`}>
+                {att.type === 'image' && att.dataUrl ? (
+                  <div className="attachment-thumb-wrapper">
+                    <img src={att.dataUrl} alt={att.name} className="attachment-thumb-img" />
+                  </div>
+                ) : (
+                  <div className={`attachment-doc-icon ${att.type}`}>
+                    {att.type === 'code' ? <Code2 size={16} /> : <FileText size={16} />}
+                  </div>
+                )}
+                <div className="attachment-details">
+                  <span className="attachment-name" title={att.name}>
+                    {att.name}
+                  </span>
+                  <span className="attachment-meta">
+                    {formatFileSize(att.size)}
+                    {att.tokenCount ? ` • ~${att.tokenCount} tokens` : ''}
+                  </span>
+                </div>
+                <button
+                  type="button"
+                  className="attachment-remove-btn"
+                  onClick={() => removePendingAttachment(att.id)}
+                  title="Remove attachment"
+                >
+                  <X size={13} />
+                </button>
+              </div>
+            ))}
+            {pendingAttachments.length > 1 && (
+              <button
+                type="button"
+                className="clear-attachments-btn"
+                onClick={clearPendingAttachments}
+                title="Remove all attachments"
+              >
+                Clear all
+              </button>
+            )}
+            {isProcessingFiles && (
+              <div className="attachment-processing-badge">
+                <Loader2 size={13} className="spin-icon" />
+                <span>Processing...</span>
+              </div>
+            )}
+          </div>
+        )}
+
         {/* Glowing coloured border on focus */}
         <div className={`input-glow-wrapper ${isDragging ? 'drag-active' : ''}`}>
           <form onSubmit={handleSubmit}>
