@@ -6,6 +6,7 @@ import { MessageList } from '@/components/MessageList'
 import { ChatInput } from '@/components/ChatInput'
 import { AuthModal } from '@/components/AuthModal'
 import { PromptTemplateModal } from '@/components/PromptTemplateModal'
+import { ShareModal } from '@/components/ShareModal'
 import { AccountPopover } from '@/components/AccountPopover'
 import { useAppStore } from '@/store/appStore'
 import { supabase, getConversationContextData } from '@/lib/supabase'
@@ -319,6 +320,9 @@ export default function Home() {
 
       {/* ── PROMPT TEMPLATE & SLASH COMMANDS MODAL ── */}
       <PromptTemplateModal />
+
+      {/* ── SHARE CHAT MODAL ── */}
+      <ShareModal />
     </div>
   )
 }
