@@ -61,8 +61,8 @@ export class VoiceActivityDetector {
     if (!this.analyser) return
 
     const timeDomainData = new Float32Array(this.analyser.fftSize)
-    this.analyser.getFloatTimeDomainData(timeDomainData)
-    this.analyser.getByteFrequencyData(this.frequencyData)
+    ;(this.analyser as any).getFloatTimeDomainData?.(timeDomainData)
+    ;(this.analyser as any).getByteFrequencyData?.(this.frequencyData)
 
     // Calculate Root Mean Square (RMS) volume level
     let sumSquares = 0
