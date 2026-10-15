@@ -58,15 +58,36 @@ public class OllamaService {
         sysMsg.put("content", systemPrompt);
         ollamaMessages.add(sysMsg);
 
+        boolean hasImages = false;
         for (ChatMessage m : request.getMessages()) {
             Map<String, Object> msg = new HashMap<>();
             msg.put("role", m.getRole());
             msg.put("content", m.getContent());
+            if (m.getImages() != null && !m.getImages().isEmpty()) {
+                msg.put("images", m.getImages());
+                hasImages = true;
+            }
             ollamaMessages.add(msg);
         }
 
+        if (request.getImages() != null && !request.getImages().isEmpty()) {
+            hasImages = true;
+            for (int i = ollamaMessages.size() - 1; i >= 0; i--) {
+                if ("user".equals(ollamaMessages.get(i).get("role"))) {
+                    ollamaMessages.get(i).put("images", request.getImages());
+                    break;
+                }
+            }
+        }
+
+        String chosenModel = request.getModel() != null ? request.getModel() : "llama3.2:3b";
+        // If images are attached and user is on standard text llama3.2:3b, gracefully switch to vision model if configured
+        if (hasImages && "llama3.2:3b".equals(chosenModel)) {
+            chosenModel = "llama3.2-vision";
+        }
+
         Map<String, Object> requestBody = new HashMap<>();
-        requestBody.put("model", request.getModel() != null ? request.getModel() : "llama3.2:3b");
+        requestBody.put("model", chosenModel);
         requestBody.put("messages", ollamaMessages);
         requestBody.put("stream", true);
 

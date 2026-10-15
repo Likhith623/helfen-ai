@@ -11,5 +11,6 @@ public class ChatRequest {
     private List<ChatMessage> messages;
     private String model;
     private boolean isTemporary;
+    private List<String> images;
 }
 
