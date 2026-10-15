@@ -35,11 +35,51 @@ Upload and analyze documents, codebases, diagrams, and images directly in the pr
 - **Interactive Lightbox:** Click on any uploaded image thumbnail in the conversation to open a high-res full-screen lightbox modal with download support.
 - **Drag & Drop:** Drag files directly from your desktop into the chat prompt box with visual glow feedback.
 
-### 3. Supabase Schema Migration (Optional)
-Run `supabase_migrations/03_add_message_attachments.sql` in your Supabase SQL Editor to store attachment metadata persistently:
+---
+
+## 🧠 Perfect RAG (Retrieval-Augmented Generation) Architecture
+
+Helfen AI features an end-to-end, production-grade **Hybrid RAG Pipeline** designed for high precision, low latency, and zero hallucination.
+
+### 1. Semantic Chunking with Sliding-Window Overlap
+- **Structure-Aware Chunking:** Intelligently breaks long documents by markdown headings (`#`, `##`), paragraphs (`\n\n`), and code fences rather than arbitrary character splits.
+- **Sliding-Window Overlap:** Configurable 600-character chunk size with a 100-character sliding overlap ensures no semantic context is lost across chunk boundaries.
+- **Metadata Tagging:** Every chunk retains its document name, chunk index, token estimate, and character offsets.
+
+### 2. Hybrid Retrieval (Dense Vector + Sparse BM25)
+- **Dense Vector Search:** Calculates unit-normalized cosine similarity between query and chunk embedding vectors.
+- **Sparse BM25 Keyword Search:** Inverted document frequency (IDF) and term frequency ranking ($k_1=1.2, b=0.75$) with exact phrase boost to pinpoint technical terms, identifiers, and numbers.
+- **Hybrid Score Formula:**
+  $$\text{Score} = 0.55 \cdot \text{CosineSimilarity} + 0.45 \cdot \text{BM25Score} + \text{PhraseBoost}$$
+- **Top-K Reranking:** Dynamically filters out low-relevance noise and feeds only the top 3–5 highest-scoring verified excerpts into the model.
+
+### 3. Strict Hallucination Prevention Directives
+- Injected system prompts command the model to ground its response exclusively in the verified excerpts and clarify when information is not present.
+- Every claim can be cross-referenced with exact chunk citations.
+
+### 4. Interactive RAG Source Inspector & Citations
+- **Grounded Citation Pills:** Every assistant response that drew from documents displays a glowing pill badge (e.g., `📚 Grounded in 3 Sources (96% match)`).
+- **Inspector Slide-Over Drawer:** Clicking the pill opens a detailed inspection drawer showing:
+  - Exact matched passages with syntax highlighting.
+  - Relevance progress meters for each chunk.
+  - Matched keyword tags.
+  - Copy-to-clipboard for quick sharing.
+
+### 5. Knowledge Base Manager & Live Semantic Tester
+- Access the **Knowledge Base Modal** via the `🧠 RAG` button in the prompt bar.
+- View total indexed documents, vector chunks, and token counts.
+- **Live Search Tester:** Type sample queries and watch the hybrid search engine rank and return matching chunks in real time.
+
+### 6. Spring Boot RAG Backend Service
+- Spring Boot provides dedicated reactive RAG endpoints:
+  - `POST /api/v1/rag/chunk` — Server-side semantic chunking.
+  - `POST /api/v1/rag/retrieve` — Hybrid candidate chunk ranking and prompt assembly.
+- Integrated into `OllamaService` for streaming chat with grounded context.
+
+### 7. Supabase Schema Migration (Optional)
+Run `supabase_migrations/05_knowledge_base_and_rag.sql` in your Supabase SQL Editor:
 ```sql
-ALTER TABLE public.messages
-ADD COLUMN IF NOT EXISTS attachments JSONB DEFAULT '[]'::jsonb;
+-- Creates knowledge_documents and document_chunks tables with cosine similarity function and RLS
 ```
 
 ---
