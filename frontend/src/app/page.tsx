@@ -5,10 +5,10 @@ import { Sidebar } from '@/components/Sidebar'
 import { MessageList } from '@/components/MessageList'
 import { ChatInput } from '@/components/ChatInput'
 import { useAppStore } from '@/store/appStore'
-import { supabase } from '@/lib/supabase'
+import { supabase, getConversationContextData } from '@/lib/supabase'
 import {
   Sun, Moon, Volume2, VolumeX, History,
-  Download, Edit, Sparkles, Menu
+  Download, Edit, Sparkles, Menu, Link2
 } from 'lucide-react'
 
 const SUGGESTIONS = [
@@ -22,7 +22,9 @@ export default function Home() {
     theme, toggleTheme, sidebarOpen, setSidebarOpen,
     activeConversationId, setMessages, messages,
     voiceEnabled, setVoiceEnabled, isTemporaryChat,
-    setAnnotations
+    setAnnotations, conversations,
+    continuationParentId, continuationParentTitle,
+    setIsContextModalOpen, startNewChatWithContinuation, setContinuationParent
   } = useAppStore()
 
   /* Load messages for active conversation */
@@ -119,6 +121,27 @@ export default function Home() {
               {theme === 'dark' ? <Sun size={18} /> : <Moon size={18} />}
             </button>
 
+            {/* Branch / Continue this chat in a new session */}
+            {activeConversationId && (
+              <button
+                className="icon-btn"
+                title="Branch / Continue this conversation in a new chat"
+                onClick={async () => {
+                  const activeConv = conversations.find(c => c.id === activeConversationId)
+                  const title = activeConv?.title || 'Current Chat'
+                  startNewChatWithContinuation(activeConversationId, title)
+                  try {
+                    const data = await getConversationContextData(activeConversationId)
+                    setContinuationParent(activeConversationId, title, data.messagesCount, data.formattedContext)
+                  } catch (err) {
+                    console.error(err)
+                  }
+                }}
+              >
+                <Link2 size={18} />
+              </button>
+            )}
+
             <button className="icon-btn" title="New chat" onClick={() => {
               useAppStore.getState().setActiveConversationId(null)
               useAppStore.getState().setMessages([])
@@ -138,6 +161,29 @@ export default function Home() {
             <div className="welcome-glow-ring" />
 
             <h1 className="welcome-heading">Where should we start?</h1>
+
+            {/* Context continuation chip */}
+            {continuationParentId ? (
+              <div
+                className="welcome-continuation-chip"
+                onClick={() => setIsContextModalOpen(true)}
+                title="Click to view or switch context chat"
+              >
+                <span className="welcome-continuation-icon"><Link2 size={14} /></span>
+                <span>Continuing from: <strong>{continuationParentTitle || 'Previous Chat'}</strong></span>
+                <span style={{ fontSize: 11, opacity: 0.7, marginLeft: 4 }}>• Click to change</span>
+              </div>
+            ) : conversations.length > 0 ? (
+              <button
+                type="button"
+                className="welcome-continuation-chip"
+                onClick={() => setIsContextModalOpen(true)}
+                title="Choose an earlier chat to use as context for this new session"
+              >
+                <span className="welcome-continuation-icon"><Link2 size={14} /></span>
+                <span>Continue from a previous chat</span>
+              </button>
+            ) : null}
 
             {/* Input box rendered at bottom via absolute positioning */}
 
