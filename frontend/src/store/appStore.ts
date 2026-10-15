@@ -1,7 +1,15 @@
 import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
+import { supabase } from '@/lib/supabase'
 
 export type Theme = 'dark' | 'light'
+
+export interface UserProfile {
+  id: string
+  email: string
+  full_name?: string | null
+  avatar_url?: string | null
+}
 
 export interface Message {
   id: string
@@ -107,6 +115,16 @@ interface AppState {
 
   voiceEnabled: boolean
   setVoiceEnabled: (v: boolean) => void
+
+  /* Auth State */
+  currentUser: { id: string; email?: string } | null
+  userProfile: UserProfile | null
+  isAuthModalOpen: boolean
+  authModalTab: 'signin' | 'signup'
+  setCurrentUser: (user: { id: string; email?: string } | null) => void
+  setUserProfile: (profile: UserProfile | null) => void
+  setIsAuthModalOpen: (open: boolean, tab?: 'signin' | 'signup') => void
+  signOut: () => Promise<void>
 }
 
 export const useAppStore = create<AppState>()(
@@ -224,6 +242,35 @@ export const useAppStore = create<AppState>()(
 
       voiceEnabled: true,
       setVoiceEnabled: (v) => set({ voiceEnabled: v }),
+
+      currentUser: null,
+      userProfile: null,
+      isAuthModalOpen: false,
+      authModalTab: 'signin',
+
+      setCurrentUser: (user) => set({ currentUser: user }),
+      setUserProfile: (profile) => set({ userProfile: profile }),
+      setIsAuthModalOpen: (open, tab = 'signin') =>
+        set({ isAuthModalOpen: open, authModalTab: tab }),
+
+      signOut: async () => {
+        try {
+          await supabase.auth.signOut()
+        } catch (err) {
+          console.error('Error signing out:', err)
+        }
+        set({
+          currentUser: null,
+          userProfile: null,
+          conversations: [],
+          messages: [],
+          activeConversationId: null,
+          continuationParentId: null,
+          continuationParentTitle: null,
+          continuationMessagesCount: 0,
+          continuationContextText: null,
+        })
+      },
     }),
     {
       name: 'helfen-store',
