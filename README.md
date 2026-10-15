@@ -190,6 +190,42 @@ Run `supabase_migrations/04_slash_commands_and_shared_chats.sql` in your Supabas
 
 ---
 
+## 🎙️ Continuous Two-Way Voice Mode (Like ChatGPT Voice)
+
+Transform Helfen AI into an ultra-responsive, real-time conversational voice assistant with continuous turn-taking, hands-free voice activity detection (VAD), and neural voice streaming.
+
+### 1. Hands-Free Conversational Turn-Taking
+- Click the glowing microphone button (`🎙️`) in the prompt input or press the voice trigger to launch the **Continuous Voice Mode** experience.
+- **Hands-Free Loop:** Speak naturally without pressing buttons. When you pause speaking, Helfen AI automatically detects the silence, packages the audio, transcribes your prompt, streams the AI answer, and reads it back aloud.
+- **Automatic Resume:** Once Helfen finishes speaking its response, the microphone automatically opens back up and listens for your next thought.
+- **Barge-In Interruption:** Start speaking at any moment to immediately interrupt the AI response; audio playback halts and Helfen instantly switches back to listening.
+
+### 2. Deepgram Nova-2 Speech-to-Text (STT)
+- **High-Accuracy Transcription:** Uses Deepgram Nova-2 (`model=nova-2&smart_format=true&punctuate=true`) via backend Spring Boot WebClient (`SttController.java` / `DeepgramService.java`) and frontend client library (`deepgramStt.ts`).
+- **Resilient Fallback:** Automatically switches to the browser Web Speech API if offline or if network permissions restrict WebSocket/REST endpoints.
+- **Pre-Configured API Key:** Deepgram API key `0cdffc07282e93e2f88beab8da45c066c850b3bc` is pre-configured in `application.yml` and frontend environment.
+
+### 3. Voice Activity Detection (VAD) & Silence Detection
+- Built-in `VoiceActivityDetector` (`vadAnalyzer.ts`) utilizing Web Audio API `AudioContext` and `AnalyserNode`.
+- **RMS Energy Tracking:** Analyzes time-domain root-mean-square (RMS) sound pressure to filter ambient room noise from authentic vocal speech.
+- **Anti-False-Triggering:** Requires 350ms of sustained speech energy before initiating the speaking state.
+- **Silence Timeout:** Detects natural 1400ms conversational pauses to auto-submit user turns without requiring any tactile clicks.
+
+### 4. Fluid 3D Waveform Orb Visualizer
+- **State-Reactive Animations:** Custom HTML5 Canvas visualizer orb with multi-frequency sound waves, breathing core glow, and particle clouds (`VoiceWaveformOrb.tsx`).
+- Dynamically morphs between four conversational modes:
+  - 🔵 **Listening Mode:** Expands and pulsates to your real-time vocal frequency harmonics.
+  - 🟣 **Thinking / Generating Mode:** Smooth orbital rotation and iridescent violet/cyan energy shifts.
+  - 🟢 **Speaking Mode:** Fluid waveforms oscillating in sync with Cartesia audio speech output.
+  - ⚪ **Idle / Paused Mode:** Gentle, ambient glow.
+
+### 5. Cartesia Ultra-Low Latency TTS Integration
+- **Sanitized Speech Synthesis:** Enhanced `CartesiaService.java` strips markdown code blocks, links, bullets, and syntax symbols before synthesis for smooth, natural speech.
+- **Natural Neural Voices:** Powered by Cartesia's Sonic English model (`sonic-english`, default voice ID `a0e998e3-12ff-4811-a46c-202274b21b44`).
+- **Live Captions:** Real-time subtitle display underneath the orb reveals both transcribed user prompts and streaming assistant replies.
+
+---
+
 ## 🚀 Architecture & Tech Stack
 
 - **Frontend:** Next.js 16 (App Router, Turbopack), React 19, Zustand, Lucide Icons, Vanilla CSS with Gemini-inspired aesthetics.
