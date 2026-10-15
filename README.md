@@ -19,6 +19,31 @@ With Helfen AI's **Chat Continuation** feature:
 
 ---
 
+## 📎 Multi-Modal File & Document Intelligence (RAG & Vision)
+
+Upload and analyze documents, codebases, diagrams, and images directly in the prompt bar:
+
+### 1. Document & Code Understanding
+- **Supported Formats:** `.pdf`, `.txt`, `.md`, `.json`, `.csv`, `.py`, `.js`, `.ts`, `.tsx`, `.java`, `.html`, `.css`, `.sql`, `.sh`, `.yml`, `.xml`.
+- **Text & Structure Extraction:** Extracts raw and formatted text, lines, and token estimates directly in the browser with zero heavy native dependencies.
+- **Context Injection:** Injects structured document blocks into the Ollama system prompt with clear boundaries, metadata, and token estimates.
+- **Document Summaries & Q&A:** Ask questions about specific sections, extract key metrics, or ask Helfen to review and refactor code.
+
+### 2. Multi-Modal Vision Analysis
+- **Supported Image Formats:** `.png`, `.jpg`, `.jpeg`, `.webp`, `.gif`, `.svg`.
+- **Automatic Model Switching:** Attaching an image automatically recommends or switches to vision-capable models (e.g., `llama3.2-vision`, `llava`).
+- **Interactive Lightbox:** Click on any uploaded image thumbnail in the conversation to open a high-res full-screen lightbox modal with download support.
+- **Drag & Drop:** Drag files directly from your desktop into the chat prompt box with visual glow feedback.
+
+### 3. Supabase Schema Migration (Optional)
+Run `supabase_migrations/03_add_message_attachments.sql` in your Supabase SQL Editor to store attachment metadata persistently:
+```sql
+ALTER TABLE public.messages
+ADD COLUMN IF NOT EXISTS attachments JSONB DEFAULT '[]'::jsonb;
+```
+
+---
+
 ## 📄 PDF Generation & Export
 
 Helfen AI includes client-side PDF document generation powered by `jspdf`.
