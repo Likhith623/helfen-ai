@@ -3,7 +3,7 @@
 import { useState, useRef, useEffect } from 'react'
 import {
   Send, Mic, StopCircle, ChevronDown, Plus, Link2, X,
-  FileText, Code2, Loader2, Check
+  FileText, Code2, Loader2, Check, Database, BookOpen
 } from 'lucide-react'
 import { useAppStore } from '@/store/appStore'
 import { supabase, getConversationContextData } from '@/lib/supabase'
@@ -15,6 +15,13 @@ import {
   applyCommandTemplate,
   fetchCustomTemplatesFromSupabase
 } from '@/lib/slashCommands'
+import {
+  chunkText,
+  searchRagChunks,
+  formatRagSystemPrompt,
+  syncDocumentToSupabase,
+  type RagChunk
+} from '@/lib/ragEngine'
 import type { PromptTemplate } from '@/store/appStore'
 import toast from 'react-hot-toast'
 
@@ -48,7 +55,8 @@ export function ChatInput() {
     continuationParentId, continuationParentTitle, continuationMessagesCount,
     continuationContextText, clearContinuationParent, setIsContextModalOpen,
     pendingAttachments, addPendingAttachment, removePendingAttachment, clearPendingAttachments,
-    customTemplates, setCustomTemplates, setIsTemplateManagerOpen
+    customTemplates, setCustomTemplates, setIsTemplateManagerOpen,
+    ragModeEnabled, knowledgeDocuments, addKnowledgeDocument, setIsKnowledgeBaseOpen
   } = useAppStore()
 
   /* Auto-resize textarea */
@@ -131,6 +139,22 @@ export function ChatInput() {
         if (attachment.type === 'image' && selectedModel === 'llama3.2:3b') {
           setSelectedModel('llama3.2-vision')
           toast('Switched to Vision model for image analysis', { icon: '👁️' })
+        } else if ((attachment.type === 'document' || attachment.type === 'code') && attachment.text) {
+          const docId = crypto.randomUUID()
+          const chunks = chunkText(docId, file.name, attachment.text)
+          addKnowledgeDocument({
+            id: docId,
+            name: file.name,
+            fileType: attachment.type,
+            size: file.size,
+            totalChunks: chunks.length,
+            chunks,
+            indexedAt: new Date().toISOString()
+          })
+          toast.success(`Indexed "${file.name}" into RAG (${chunks.length} chunks)`, {
+            icon: '🧠',
+            duration: 2500
+          })
         }
         toast.success(`Attached "${file.name}"`, {
           icon: attachment.type === 'image' ? '🖼️' : attachment.type === 'code' ? '💻' : '📄',
@@ -266,6 +290,20 @@ export function ChatInput() {
       })
     }
 
+    // RAG Hybrid Retrieval across Knowledge Base
+    let retrievedRagChunks: RagChunk[] = []
+    let ragSystemPrompt = ''
+
+    if (ragModeEnabled) {
+      const allChunks = knowledgeDocuments.flatMap((d) => d.chunks)
+      if (allChunks.length > 0 && content) {
+        retrievedRagChunks = searchRagChunks(content, allChunks, 4, 0.08)
+        if (retrievedRagChunks.length > 0) {
+          ragSystemPrompt = formatRagSystemPrompt(retrievedRagChunks)
+        }
+      }
+    }
+
     const aiMsgId = crypto.randomUUID()
     addMessage({
       id: aiMsgId,
@@ -273,7 +311,8 @@ export function ChatInput() {
       role: 'assistant' as const,
       content: '',
       model: selectedModel,
-      created_at: new Date().toISOString()
+      created_at: new Date().toISOString(),
+      retrievedChunks: retrievedRagChunks.length > 0 ? retrievedRagChunks : undefined
     })
     setStreamingMessageId(aiMsgId)
     setIsStreaming(true)
@@ -292,6 +331,8 @@ export function ChatInput() {
           conversationId: convId,
           parentConversationId: continuationParentId || null,
           continuationContext: resolvedContext || null,
+          ragContext: ragSystemPrompt || null,
+          retrievedChunks: retrievedRagChunks.length > 0 ? retrievedRagChunks : null,
           messages: [
             ...messages.map((m) => ({
               role: m.role,
@@ -557,6 +598,25 @@ export function ChatInput() {
                         ? continuationParentTitle.slice(0, 14) + (continuationParentTitle.length > 14 ? '…' : '')
                         : 'Context Linked'
                       : 'Context'}
+                  </span>
+                </button>
+
+                {/* RAG Knowledge Base & Retrieval button */}
+                <button
+                  type="button"
+                  className={`rag-toggle-btn ${ragModeEnabled ? 'active' : ''} ${knowledgeDocuments.length > 0 ? 'has-docs' : ''}`}
+                  onClick={() => setIsKnowledgeBaseOpen(true)}
+                  title={
+                    ragModeEnabled
+                      ? `RAG Active: ${knowledgeDocuments.length} doc(s) indexed (${knowledgeDocuments.reduce((s, d) => s + d.totalChunks, 0)} chunks). Click to open Knowledge Base.`
+                      : 'RAG Disabled. Click to open Knowledge Base & enable.'
+                  }
+                >
+                  <Database size={13} />
+                  <span>
+                    {knowledgeDocuments.length > 0
+                      ? `${knowledgeDocuments.length} doc${knowledgeDocuments.length > 1 ? 's' : ''}`
+                      : 'RAG'}
                   </span>
                 </button>
 
