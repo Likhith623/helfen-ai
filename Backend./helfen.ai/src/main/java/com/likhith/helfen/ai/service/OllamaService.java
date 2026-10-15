@@ -49,6 +49,12 @@ public class OllamaService {
             systemPromptBuilder.append("\n\nContext from current interactions:\n").append(memoryContext);
         }
 
+        // If RAG knowledge base context is provided, inject with grounding directives
+        if (request.getRagContext() != null && !request.getRagContext().isBlank()) {
+            systemPromptBuilder.append("\n\n").append(request.getRagContext());
+            systemPromptBuilder.append("\nCRITICAL GROUNDING DIRECTIVE: Base your answers on the retrieved knowledge excerpts above. Cite specific source names and chunks when stating facts. If the excerpts do not contain enough information to answer fully, state what is known from the sources and clarify any missing details.");
+        }
+
         String systemPrompt = systemPromptBuilder.toString();
 
         List<Map<String, Object>> ollamaMessages = new ArrayList<>();

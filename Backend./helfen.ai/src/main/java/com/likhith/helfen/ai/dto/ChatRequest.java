@@ -12,5 +12,7 @@ public class ChatRequest {
     private String model;
     private boolean isTemporary;
     private List<String> images;
+    private String ragContext;
+    private List<RagChunk> retrievedChunks;
 }
 
