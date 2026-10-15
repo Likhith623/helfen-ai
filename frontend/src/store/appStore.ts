@@ -23,6 +23,16 @@ export interface MessageAttachment {
   tokenCount?: number
 }
 
+export interface PromptTemplate {
+  id: string
+  command: string
+  title: string
+  description: string
+  template: string
+  isCustom?: boolean
+  isFavorite?: boolean
+}
+
 export interface Message {
   id: string
   conversation_id: string
@@ -135,6 +145,23 @@ interface AppState {
   addPendingAttachment: (att: MessageAttachment) => void
   removePendingAttachment: (id: string) => void
   clearPendingAttachments: () => void
+
+  /* Prompt Templates & Slash Commands */
+  customTemplates: PromptTemplate[]
+  setCustomTemplates: (templates: PromptTemplate[]) => void
+  addCustomTemplate: (template: PromptTemplate) => void
+  removeCustomTemplate: (id: string) => void
+
+  /* Share Modal State */
+  isShareModalOpen: boolean
+  shareModalConvId: string | null
+  shareModalConvTitle: string | null
+  openShareModal: (convId: string, title: string) => void
+  closeShareModal: () => void
+
+  /* Prompt Template Manager Modal */
+  isTemplateManagerOpen: boolean
+  setIsTemplateManagerOpen: (open: boolean) => void
 
   /* Auth State */
   currentUser: { id: string; email?: string } | null
@@ -272,6 +299,34 @@ export const useAppStore = create<AppState>()(
         })),
       clearPendingAttachments: () => set({ pendingAttachments: [] }),
 
+      customTemplates: [],
+      setCustomTemplates: (templates) => set({ customTemplates: templates }),
+      addCustomTemplate: (template) =>
+        set((state) => ({ customTemplates: [...state.customTemplates, template] })),
+      removeCustomTemplate: (id) =>
+        set((state) => ({
+          customTemplates: state.customTemplates.filter((t) => t.id !== id),
+        })),
+
+      isShareModalOpen: false,
+      shareModalConvId: null,
+      shareModalConvTitle: null,
+      openShareModal: (convId, title) =>
+        set({
+          isShareModalOpen: true,
+          shareModalConvId: convId,
+          shareModalConvTitle: title,
+        }),
+      closeShareModal: () =>
+        set({
+          isShareModalOpen: false,
+          shareModalConvId: null,
+          shareModalConvTitle: null,
+        }),
+
+      isTemplateManagerOpen: false,
+      setIsTemplateManagerOpen: (open) => set({ isTemplateManagerOpen: open }),
+
       currentUser: null,
       userProfile: null,
       isAuthModalOpen: false,
@@ -308,6 +363,7 @@ export const useAppStore = create<AppState>()(
         sidebarOpen: state.sidebarOpen,
         selectedModel: state.selectedModel,
         voiceEnabled: state.voiceEnabled,
+        customTemplates: state.customTemplates,
       }),
     }
   )
