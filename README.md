@@ -104,6 +104,52 @@ COMMENT ON COLUMN conversations.parent_conversation_id IS 'References the previo
 
 ---
 
+## ⚡ Slash Commands & Prompt Templates
+
+Type `/` directly in the prompt textarea to open an intelligent, keyboard-navigable quick-actions popup:
+
+### 1. Built-in Quick Actions
+- `/summarize` — Quick executive summary of text, documents, or context.
+- `/explain` — ELI5 or in-depth technical explanation with real-world analogies.
+- `/diagram` — Asks Helfen to produce an interactive Mermaid diagram (architecture, flowcharts, sequence diagrams).
+- `/refactor` — Code review, performance optimization, and clean architecture improvements.
+- `/fix` — Bug analysis, error diagnosis, and corrected code solutions.
+- `/brainstorm` — 10 high-impact creative ideas and architectural solutions.
+- `/tests` — Unit and integration tests with edge cases.
+- `/translate` — Translate content into target languages while preserving technical accuracy.
+
+### 2. Custom User-Saved Prompt Templates
+- **Template Manager Modal:** Click the **Templates** (`📋`) button in the input bar or slash popup to manage your custom snippets.
+- **Dynamic Variables:** Support for placeholder templates (e.g. `{{code}}`, `{{topic}}`).
+- **Supabase Persistence:** Custom templates are stored in the `prompt_templates` table with Row Level Security (RLS) per user, with graceful fallback to local storage if offline.
+
+---
+
+## 🔗 Shareable Public Chat Links
+
+Create public, read-only snapshots of your conversations to share with colleagues or the community:
+
+### 1. Privacy Settings & Link Generation
+- Click the **Share** (`🔗`) button in the top bar or sidebar conversation menu.
+- **Attributed or Anonymous:** Choose whether your username is displayed on the public share page or keep it completely anonymous.
+- **Unique Share URL:** Generates a secure share link: `helfen.ai/share/<id>`.
+
+### 2. Public Read-Only Viewer (`/share/[id]`)
+- Anyone with the link can view the conversation with syntax-highlighted code blocks, markdown formatting, token statistics, and attachments.
+- **Export to PDF:** Visitors can download the shared conversation as a publication-grade PDF directly from the viewer.
+
+### 3. "Continue in Helfen" (Fork & Branch)
+- Visitors can click **"Continue in Helfen"** to fork the shared conversation into their own Helfen AI workspace.
+- The entire conversation history is seamlessly imported into their active session as context so they can immediately ask follow-up questions.
+
+### 4. Supabase Schema Migration
+Run `supabase_migrations/04_slash_commands_and_shared_chats.sql` in your Supabase SQL Editor:
+```sql
+-- Creates prompt_templates table and shared_chats table with RLS
+```
+
+---
+
 ## 🚀 Architecture & Tech Stack
 
 - **Frontend:** Next.js 16 (App Router, Turbopack), React 19, Zustand, Lucide Icons, Vanilla CSS with Gemini-inspired aesthetics.
