@@ -19,20 +19,19 @@ With Helfen AI's **Chat Continuation** feature:
 
 ---
 
-## 🔐 Email & Password Authentication
+## 🔐 Email & Password Authentication (No Verification Links)
 
-Helfen AI features normal email/password authentication (no third-party OAuth required).
+Helfen AI features normal email/password authentication without any email verification links or third-party OAuth.
 
 ### What you need in Supabase:
 1. **Enable Email Provider:**
    - In Supabase Dashboard, go to **Authentication -> Providers -> Email**.
    - Make sure **"Enable Email provider"** is turned **ON**.
-2. **Email Confirmations (Optional / Recommended for testing):**
+2. **Turn OFF Email Confirmations:**
    - Under **Authentication -> Providers -> Email -> Email Confirmations**:
-   - Turn **OFF** "Confirm email" if you want users to register and sign in immediately without waiting for an email verification link.
-   - If left ON, users will receive a verification link before they can log in.
-3. **Run the Auth Profile Migration:**
-   - Run `supabase_migrations/02_auth_and_profiles.sql` in your Supabase SQL Editor to ensure `profiles` and the `handle_new_user()` trigger are active and idempotent.
+   - Turn **OFF** **"Confirm email"** so users are registered and authenticated immediately without any verification emails or links.
+3. **Run the Auth SQL Migration:**
+   - Run `supabase_migrations/02_auth_and_profiles.sql` in your Supabase SQL Editor. It creates the `profiles` table, profile sync trigger, and an `auto_confirm_user` database trigger so every user is automatically confirmed immediately.
 
 ---
 
