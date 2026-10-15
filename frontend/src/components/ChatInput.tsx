@@ -8,7 +8,14 @@ import {
 import { useAppStore } from '@/store/appStore'
 import { supabase, getConversationContextData } from '@/lib/supabase'
 import { ChatContextModal } from '@/components/ChatContextModal'
+import { SlashCommandPopup } from '@/components/SlashCommandPopup'
 import { processUploadedFile, formatAttachmentsContext, formatFileSize } from '@/lib/fileProcessor'
+import {
+  filterCommands,
+  applyCommandTemplate,
+  fetchCustomTemplatesFromSupabase
+} from '@/lib/slashCommands'
+import type { PromptTemplate } from '@/store/appStore'
 import toast from 'react-hot-toast'
 
 const MODELS = [
@@ -25,6 +32,10 @@ export function ChatInput() {
   const [isDragging, setIsDragging] = useState(false)
   const [isProcessingFiles, setIsProcessingFiles] = useState(false)
   const [isModelMenuOpen, setIsModelMenuOpen] = useState(false)
+  const [slashQuery, setSlashQuery] = useState('')
+  const [isSlashOpen, setIsSlashOpen] = useState(false)
+  const [slashIndex, setSlashIndex] = useState(0)
+
   const textareaRef = useRef<HTMLTextAreaElement>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
   const modelMenuRef = useRef<HTMLDivElement>(null)
@@ -36,7 +47,8 @@ export function ChatInput() {
     setStreamingMessageId, updateMessage, addConversation,
     continuationParentId, continuationParentTitle, continuationMessagesCount,
     continuationContextText, clearContinuationParent, setIsContextModalOpen,
-    pendingAttachments, addPendingAttachment, removePendingAttachment, clearPendingAttachments
+    pendingAttachments, addPendingAttachment, removePendingAttachment, clearPendingAttachments,
+    customTemplates, setCustomTemplates, setIsTemplateManagerOpen
   } = useAppStore()
 
   /* Auto-resize textarea */
@@ -46,6 +58,45 @@ export function ChatInput() {
     el.style.height = '24px'
     el.style.height = `${Math.min(el.scrollHeight, 200)}px`
   }, [input])
+
+  /* Load custom prompt templates on mount */
+  useEffect(() => {
+    fetchCustomTemplatesFromSupabase().then((data) => {
+      if (data && data.length > 0) {
+        setCustomTemplates(data)
+      }
+    })
+  }, [])
+
+  /* Detect slash command input */
+  useEffect(() => {
+    if (input.startsWith('/') && !input.includes('\n')) {
+      const parts = input.split(' ')
+      if (parts.length <= 2) {
+        setSlashQuery(parts[0])
+        setIsSlashOpen(true)
+        setSlashIndex(0)
+        return
+      }
+    }
+    setIsSlashOpen(false)
+  }, [input])
+
+  const filteredSlashCommands = filterCommands(slashQuery, customTemplates)
+
+  function handleSelectSlashCommand(cmd: PromptTemplate) {
+    const parts = input.split(' ')
+    const userParam = parts.slice(1).join(' ')
+    const applied = applyCommandTemplate(cmd, userParam)
+    setInput(applied)
+    setIsSlashOpen(false)
+    setTimeout(() => {
+      if (textareaRef.current) {
+        textareaRef.current.focus()
+        textareaRef.current.setSelectionRange(applied.length, applied.length)
+      }
+    }, 40)
+  }
 
   /* Click outside to close model dropdown */
   useEffect(() => {
@@ -302,6 +353,29 @@ export function ChatInput() {
   }
 
   function handleKeyDown(e: React.KeyboardEvent) {
+    if (isSlashOpen && filteredSlashCommands.length > 0) {
+      if (e.key === 'ArrowDown') {
+        e.preventDefault()
+        setSlashIndex((prev) => (prev + 1) % filteredSlashCommands.length)
+        return
+      }
+      if (e.key === 'ArrowUp') {
+        e.preventDefault()
+        setSlashIndex((prev) => (prev - 1 + filteredSlashCommands.length) % filteredSlashCommands.length)
+        return
+      }
+      if (e.key === 'Enter' || e.key === 'Tab') {
+        e.preventDefault()
+        handleSelectSlashCommand(filteredSlashCommands[slashIndex])
+        return
+      }
+      if (e.key === 'Escape') {
+        e.preventDefault()
+        setIsSlashOpen(false)
+        return
+      }
+    }
+
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault()
       handleSubmit()
@@ -405,7 +479,21 @@ export function ChatInput() {
         )}
 
         {/* Glowing coloured border on focus */}
-        <div className={`input-glow-wrapper ${isDragging ? 'drag-active' : ''}`}>
+        <div className={`input-glow-wrapper ${isDragging ? 'drag-active' : ''}`} style={{ position: 'relative' }}>
+          {/* Slash Commands Autocomplete Popup */}
+          {isSlashOpen && (
+            <SlashCommandPopup
+              commands={filteredSlashCommands}
+              selectedIndex={slashIndex}
+              onSelect={handleSelectSlashCommand}
+              onManageTemplates={() => {
+                setIsSlashOpen(false)
+                setIsTemplateManagerOpen(true)
+              }}
+              onClose={() => setIsSlashOpen(false)}
+            />
+          )}
+
           <form onSubmit={handleSubmit}>
             <div
               className="input-box"
