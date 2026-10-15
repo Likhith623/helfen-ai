@@ -38,6 +38,7 @@ CREATE TABLE IF NOT EXISTS conversations (
   is_temporary BOOLEAN DEFAULT false,
   is_archived BOOLEAN DEFAULT false,
   is_pinned BOOLEAN DEFAULT false,
+  parent_conversation_id UUID REFERENCES conversations(id) ON DELETE SET NULL,
   created_at TIMESTAMPTZ DEFAULT NOW(),
   updated_at TIMESTAMPTZ DEFAULT NOW()
 );
@@ -208,6 +209,7 @@ CREATE OR REPLACE TRIGGER on_auth_user_created
 -- INDEXES
 -- ============================================================
 CREATE INDEX IF NOT EXISTS idx_conversations_user_id ON conversations(user_id);
+CREATE INDEX IF NOT EXISTS idx_conversations_parent_conversation_id ON conversations(parent_conversation_id);
 CREATE INDEX IF NOT EXISTS idx_conversations_updated_at ON conversations(updated_at DESC);
 CREATE INDEX IF NOT EXISTS idx_messages_conversation_id ON messages(conversation_id);
 CREATE INDEX IF NOT EXISTS idx_messages_created_at ON messages(created_at);
