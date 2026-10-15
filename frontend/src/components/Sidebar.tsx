@@ -6,8 +6,9 @@ import { supabase, getConversationContextData } from '@/lib/supabase'
 import {
   Menu, Plus, MessageSquare, Search, Sparkles,
   Image, Video, BookOpen, Timer, Settings,
-  MoreHorizontal, Pin, Trash2, NotebookPen, Link2
+  MoreHorizontal, Pin, Trash2, NotebookPen, Link2, LogIn
 } from 'lucide-react'
+import { AccountPopover } from '@/components/AccountPopover'
 import toast from 'react-hot-toast'
 
 export function Sidebar() {
@@ -16,14 +17,16 @@ export function Sidebar() {
     activeConversationId, setActiveConversationId,
     conversations, setConversations, addConversation, removeConversation,
     updateConversation, isTemporaryChat, setIsTemporaryChat, setMessages,
-    startNewChatWithContinuation, setContinuationParent
+    startNewChatWithContinuation, setContinuationParent,
+    currentUser, userProfile, setIsAuthModalOpen
   } = useAppStore()
 
   const [searchQuery, setSearchQuery] = useState('')
   const [activeMenu, setActiveMenu] = useState<string | null>(null)
+  const [isAccountOpen, setIsAccountOpen] = useState(false)
   const menuRef = useRef<HTMLDivElement>(null)
 
-  useEffect(() => { loadConversations() }, [])
+  useEffect(() => { loadConversations() }, [currentUser])
 
   useEffect(() => {
     const handler = (e: MouseEvent) => {
@@ -36,7 +39,10 @@ export function Sidebar() {
 
   async function loadConversations() {
     const { data: { user } } = await supabase.auth.getUser()
-    if (!user) return
+    if (!user) {
+      setConversations([])
+      return
+    }
     const { data } = await supabase
       .from('conversations').select('*')
       .eq('user_id', user.id).eq('is_temporary', false)
@@ -233,15 +239,48 @@ export function Sidebar() {
       </div>
 
       {/* ── FOOTER ── */}
-      <div className="sidebar-footer">
-        <button className="sidebar-user">
-          <div className="sidebar-user-avatar">L</div>
-          <div className="sidebar-user-info">
-            <div className="sidebar-user-name">Likhith Vasireddy</div>
-            <div className="sidebar-user-plan">Pro</div>
+      <div className="sidebar-footer" style={{ position: 'relative' }}>
+        {currentUser ? (
+          <>
+            <button
+              className="sidebar-user"
+              onClick={() => setIsAccountOpen(!isAccountOpen)}
+              title="Account & Settings"
+            >
+              <div className="sidebar-user-avatar">
+                {userProfile?.full_name?.charAt(0).toUpperCase() ||
+                  currentUser.email?.charAt(0).toUpperCase() ||
+                  'U'}
+              </div>
+              <div className="sidebar-user-info">
+                <div className="sidebar-user-name">
+                  {userProfile?.full_name || currentUser.email?.split('@')[0] || 'User'}
+                </div>
+                <div className="sidebar-user-plan">Pro</div>
+              </div>
+              <Settings size={16} style={{ color: 'var(--text-muted)', flexShrink: 0 }} />
+            </button>
+            <AccountPopover
+              isOpen={isAccountOpen}
+              onClose={() => setIsAccountOpen(false)}
+            />
+          </>
+        ) : (
+          <div className="sidebar-signin-card">
+            <div className="sidebar-signin-card-text">
+              <strong>Sign in to Helfen</strong>
+              <div>Save your conversations and continue them anytime.</div>
+            </div>
+            <button
+              type="button"
+              className="sidebar-signin-btn"
+              onClick={() => setIsAuthModalOpen(true, 'signin')}
+            >
+              <LogIn size={14} />
+              <span>Sign In / Register</span>
+            </button>
           </div>
-          <Settings size={16} style={{ color: 'var(--text-muted)', flexShrink: 0 }} />
-        </button>
+        )}
       </div>
     </aside>
   )

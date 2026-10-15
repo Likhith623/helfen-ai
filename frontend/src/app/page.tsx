@@ -1,14 +1,16 @@
 'use client'
 
-import { useEffect } from 'react'
+import { useEffect, useState } from 'react'
 import { Sidebar } from '@/components/Sidebar'
 import { MessageList } from '@/components/MessageList'
 import { ChatInput } from '@/components/ChatInput'
+import { AuthModal } from '@/components/AuthModal'
+import { AccountPopover } from '@/components/AccountPopover'
 import { useAppStore } from '@/store/appStore'
 import { supabase, getConversationContextData } from '@/lib/supabase'
 import {
   Sun, Moon, Volume2, VolumeX, History,
-  Download, Edit, Sparkles, Menu, Link2
+  Download, Edit, Sparkles, Menu, Link2, LogIn
 } from 'lucide-react'
 
 const SUGGESTIONS = [
@@ -24,8 +26,49 @@ export default function Home() {
     voiceEnabled, setVoiceEnabled, isTemporaryChat,
     setAnnotations, conversations,
     continuationParentId, continuationParentTitle,
-    setIsContextModalOpen, startNewChatWithContinuation, setContinuationParent
+    setIsContextModalOpen, startNewChatWithContinuation, setContinuationParent,
+    currentUser, userProfile, setCurrentUser, setUserProfile, setIsAuthModalOpen
   } = useAppStore()
+
+  const [isAccountOpen, setIsAccountOpen] = useState(false)
+
+  /* Listen to Supabase Auth State */
+  useEffect(() => {
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      if (session?.user) {
+        setCurrentUser({ id: session.user.id, email: session.user.email })
+        supabase
+          .from('profiles')
+          .select('*')
+          .eq('id', session.user.id)
+          .single()
+          .then(({ data }) => {
+            if (data) setUserProfile(data as any)
+          })
+      }
+    })
+
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      if (session?.user) {
+        setCurrentUser({ id: session.user.id, email: session.user.email })
+        supabase
+          .from('profiles')
+          .select('*')
+          .eq('id', session.user.id)
+          .single()
+          .then(({ data }) => {
+            if (data) setUserProfile(data as any)
+          })
+      } else {
+        setCurrentUser(null)
+        setUserProfile(null)
+      }
+    })
+
+    return () => {
+      subscription.unsubscribe()
+    }
+  }, [setCurrentUser, setUserProfile])
 
   /* Load messages for active conversation */
   useEffect(() => {
@@ -149,7 +192,33 @@ export default function Home() {
               <Edit size={18} />
             </button>
 
-            <button className="user-avatar-btn" title="Account">L</button>
+            {currentUser ? (
+              <div style={{ position: 'relative' }}>
+                <button
+                  className="user-avatar-btn"
+                  title="Account & Profile"
+                  onClick={() => setIsAccountOpen(!isAccountOpen)}
+                >
+                  {userProfile?.full_name?.charAt(0).toUpperCase() ||
+                    currentUser.email?.charAt(0).toUpperCase() ||
+                    'U'}
+                </button>
+                <AccountPopover
+                  isOpen={isAccountOpen}
+                  onClose={() => setIsAccountOpen(false)}
+                />
+              </div>
+            ) : (
+              <button
+                type="button"
+                className="topbar-signin-btn"
+                onClick={() => setIsAuthModalOpen(true, 'signin')}
+                title="Sign in to your account"
+              >
+                <LogIn size={14} />
+                <span>Sign In</span>
+              </button>
+            )}
           </div>
         </header>
 
@@ -215,6 +284,9 @@ export default function Home() {
         {/* ── CHAT INPUT (always visible at bottom) ── */}
         <ChatInput />
       </main>
+
+      {/* ── AUTHENTICATION MODAL ── */}
+      <AuthModal />
     </div>
   )
 }
