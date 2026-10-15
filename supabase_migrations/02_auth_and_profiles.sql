@@ -53,17 +53,35 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
 
--- Recreate trigger cleanly
+-- 5. Attach Profile Trigger to auth.users
 DROP TRIGGER IF EXISTS on_auth_user_created ON auth.users;
 CREATE TRIGGER on_auth_user_created
   AFTER INSERT ON auth.users
   FOR EACH ROW EXECUTE FUNCTION public.handle_new_user();
 
+-- 6. Auto-Confirm Trigger: Instantly confirms all new signups so no email verification link is needed
+CREATE OR REPLACE FUNCTION public.auto_confirm_user()
+RETURNS TRIGGER AS $$
+BEGIN
+  NEW.email_confirmed_at = NOW();
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
+DROP TRIGGER IF EXISTS on_auth_user_auto_confirm ON auth.users;
+CREATE TRIGGER on_auth_user_auto_confirm
+  BEFORE INSERT ON auth.users
+  FOR EACH ROW EXECUTE FUNCTION public.auto_confirm_user();
+
+-- Also confirm any existing unconfirmed accounts so they can log in right away
+UPDATE auth.users
+SET email_confirmed_at = NOW()
+WHERE email_confirmed_at IS NULL;
+
 -- ============================================================
--- SUPABASE DASHBOARD CONFIGURATION (Check in Supabase UI):
+-- SUPABASE DASHBOARD CONFIGURATION:
 -- 1. Go to Authentication -> Providers -> Email
 -- 2. Ensure "Enable Email provider" is turned ON.
--- 3. (Optional for local dev) Under "Email Confirmations",
---    turn OFF "Confirm email" if you want users to sign in
---    immediately without needing to click an email verification link.
+-- 3. Under "Email Confirmations", turn OFF "Confirm email"
+--    (The SQL trigger above also auto-confirms users at the database level).
 -- ============================================================
