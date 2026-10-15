@@ -3,7 +3,7 @@
 import { useState, useRef, useEffect } from 'react'
 import {
   Send, Mic, StopCircle, ChevronDown, Plus, Link2, X,
-  FileText, Code2, Loader2
+  FileText, Code2, Loader2, Check
 } from 'lucide-react'
 import { useAppStore } from '@/store/appStore'
 import { supabase, getConversationContextData } from '@/lib/supabase'
@@ -11,13 +11,23 @@ import { ChatContextModal } from '@/components/ChatContextModal'
 import { processUploadedFile, formatAttachmentsContext, formatFileSize } from '@/lib/fileProcessor'
 import toast from 'react-hot-toast'
 
+const MODELS = [
+  { id: 'llama3.2:3b', name: 'Flash', desc: 'Fast & responsive text', badge: 'Default' },
+  { id: 'llama3.2-vision', name: 'Vision', desc: 'Multimodal image & document intelligence', badge: 'Vision' },
+  { id: 'llava', name: 'LLaVA', desc: 'Visual understanding assistant', badge: 'Vision' },
+  { id: 'mistral', name: 'Mistral', desc: 'Deep technical reasoning & coding', badge: 'Pro' },
+  { id: 'deepseek-r1:8b', name: 'DeepSeek R1', desc: 'Step-by-step reasoning chain', badge: 'Reasoning' }
+]
+
 export function ChatInput() {
   const [input, setInput] = useState('')
   const [isRecording, setIsRecording] = useState(false)
   const [isDragging, setIsDragging] = useState(false)
   const [isProcessingFiles, setIsProcessingFiles] = useState(false)
+  const [isModelMenuOpen, setIsModelMenuOpen] = useState(false)
   const textareaRef = useRef<HTMLTextAreaElement>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
+  const modelMenuRef = useRef<HTMLDivElement>(null)
 
   const {
     isStreaming, setIsStreaming,
@@ -36,6 +46,17 @@ export function ChatInput() {
     el.style.height = '24px'
     el.style.height = `${Math.min(el.scrollHeight, 200)}px`
   }, [input])
+
+  /* Click outside to close model dropdown */
+  useEffect(() => {
+    const handler = (e: MouseEvent) => {
+      if (modelMenuRef.current && !modelMenuRef.current.contains(e.target as Node)) {
+        setIsModelMenuOpen(false)
+      }
+    }
+    document.addEventListener('mousedown', handler)
+    return () => document.removeEventListener('mousedown', handler)
+  }, [])
 
   /* Let suggestion chips set textarea value via DOM event */
   useEffect(() => {
@@ -56,6 +77,10 @@ export function ChatInput() {
       try {
         const attachment = await processUploadedFile(file)
         addPendingAttachment(attachment)
+        if (attachment.type === 'image' && selectedModel === 'llama3.2:3b') {
+          setSelectedModel('llama3.2-vision')
+          toast('Switched to Vision model for image analysis', { icon: '👁️' })
+        }
         toast.success(`Attached "${file.name}"`, {
           icon: attachment.type === 'image' ? '🖼️' : attachment.type === 'code' ? '💻' : '📄',
           duration: 2500,
@@ -447,10 +472,55 @@ export function ChatInput() {
                   </span>
                 </button>
 
-                {/* Model pill — like Gemini's "Flash ▾" */}
-                <button type="button" className="model-pill" title="Change model">
-                  Flash <ChevronDown size={13} />
-                </button>
+                {/* Model pill & dropdown */}
+                <div style={{ position: 'relative' }} ref={modelMenuRef}>
+                  <button
+                    type="button"
+                    className="model-pill"
+                    title="Change model"
+                    onClick={() => setIsModelMenuOpen(!isModelMenuOpen)}
+                  >
+                    <span>
+                      {MODELS.find((m) => m.id === selectedModel)?.name || 'Flash'}
+                    </span>
+                    <ChevronDown
+                      size={13}
+                      style={{
+                        transform: isModelMenuOpen ? 'rotate(180deg)' : 'none',
+                        transition: 'transform 0.15s ease'
+                      }}
+                    />
+                  </button>
+
+                  {isModelMenuOpen && (
+                    <div className="model-dropdown-menu">
+                      <div className="model-dropdown-header">Select Model</div>
+                      {MODELS.map((m) => (
+                        <button
+                          key={m.id}
+                          type="button"
+                          className={`model-dropdown-item ${selectedModel === m.id ? 'active' : ''}`}
+                          onClick={() => {
+                            setSelectedModel(m.id)
+                            setIsModelMenuOpen(false)
+                            toast.success(`Active model: ${m.name}`)
+                          }}
+                        >
+                          <div className="model-item-info">
+                            <div className="model-item-name">
+                              <strong>{m.name}</strong>
+                              <span className="model-badge">{m.badge}</span>
+                            </div>
+                            <div className="model-item-desc">{m.desc}</div>
+                          </div>
+                          {selectedModel === m.id && (
+                            <Check size={14} className="model-check-icon" />
+                          )}
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                </div>
 
                 {/* Mic */}
                 {isRecording ? (
