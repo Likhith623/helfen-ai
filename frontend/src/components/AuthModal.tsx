@@ -180,30 +180,51 @@ export function AuthModal() {
         }
 
         if (data.user) {
-          // If auto-confirmed / session returned
-          if (data.session) {
-            setCurrentUser({ id: data.user.id, email: data.user.email })
-            setUserProfile({
-              id: data.user.id,
-              email: data.user.email || '',
-              full_name: fullName.trim() || null
-            })
+          let session = data.session
 
-            toast.success('Account created successfully!', {
-              icon: '🎉',
-              style: {
-                background: 'var(--bg-card)',
-                color: 'var(--text-primary)',
-                border: '1px solid var(--border)'
-              }
+          // If session wasn't returned on sign up, immediately sign in with password
+          if (!session) {
+            const signInRes = await supabase.auth.signInWithPassword({
+              email: email.trim(),
+              password
             })
-            setIsAuthModalOpen(false)
-          } else {
-            // Confirmation email sent
-            setSuccessInfo(
-              'Account created! If email confirmation is enabled in your Supabase project, please check your inbox to confirm your email before signing in.'
-            )
+            if (signInRes.data.session) {
+              session = signInRes.data.session
+            }
           }
+
+          const uid = session?.user?.id || data.user.id
+          const uemail = session?.user?.email || data.user.email || email.trim()
+
+          setCurrentUser({ id: uid, email: uemail })
+          setUserProfile({
+            id: uid,
+            email: uemail,
+            full_name: fullName.trim() || null
+          })
+
+          // Load user's conversations
+          const { data: convData } = await supabase
+            .from('conversations')
+            .select('*')
+            .eq('user_id', uid)
+            .eq('is_temporary', false)
+            .order('updated_at', { ascending: false })
+            .limit(100)
+
+          if (convData) {
+            setConversations(convData as any)
+          }
+
+          toast.success('Account created and signed in!', {
+            icon: '🎉',
+            style: {
+              background: 'var(--bg-card)',
+              color: 'var(--text-primary)',
+              border: '1px solid var(--border)'
+            }
+          })
+          setIsAuthModalOpen(false)
         }
       }
     } catch (err: any) {
