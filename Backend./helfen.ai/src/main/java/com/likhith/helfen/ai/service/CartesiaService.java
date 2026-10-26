@@ -37,7 +37,7 @@ public class CartesiaService {
 
         Map<String, Object> requestBody = new HashMap<>();
         requestBody.put("transcript", cleanText);
-        requestBody.put("model_id", "sonic-english");
+        requestBody.put("model_id", "sonic-3.5");
         
         Map<String, Object> voice = new HashMap<>();
         voice.put("mode", "id");
@@ -53,7 +53,11 @@ public class CartesiaService {
         return cartesiaWebClient.post()
                 .bodyValue(requestBody)
                 .retrieve()
-                .bodyToFlux(DataBuffer.class);
+                .bodyToFlux(DataBuffer.class)
+                .onErrorResume(err -> {
+                    org.slf4j.LoggerFactory.getLogger(CartesiaService.class).error("Cartesia TTS error: {}", err.getMessage());
+                    return Flux.empty();
+                });
     }
 
     private String cleanMarkdownForSpeech(String md) {

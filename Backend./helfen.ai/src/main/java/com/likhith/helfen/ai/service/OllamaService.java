@@ -35,7 +35,9 @@ public class OllamaService {
         systemPromptBuilder.append("You are Helfen AI, a helpful, harmless, and honest AI assistant. You provide clear, concise, and accurate responses.");
 
         // If this conversation is a continuation of an earlier conversation, inject continuation context
-        if (request.getContinuationContext() != null && !request.getContinuationContext().isBlank()) {
+        if (request.getReferencedContextSummary() != null && !request.getReferencedContextSummary().isBlank()) {
+            systemPromptBuilder.append("\n\n").append(request.getReferencedContextSummary());
+        } else if (request.getContinuationContext() != null && !request.getContinuationContext().isBlank()) {
             systemPromptBuilder.append("\n\n").append(request.getContinuationContext());
         } else if (request.getParentConversationId() != null && !request.getParentConversationId().equals("temp")) {
             // Check if parent conversation has context cached in Redis
@@ -109,6 +111,10 @@ public class OllamaService {
                 .uri("/api/chat")
                 .bodyValue(requestBody)
                 .retrieve()
-                .bodyToFlux(String.class);
+                .bodyToFlux(String.class)
+                .onErrorResume(err -> {
+                    String fallbackJson = "{\"message\": {\"content\": \"[Notice: Local Ollama service on http://localhost:11434 is offline. Switch to Gemini 3.5 Flash or start Ollama.]\"}, \"done\": true}";
+                    return Flux.just(fallbackJson);
+                });
     }
 }

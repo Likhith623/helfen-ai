@@ -14,8 +14,12 @@ public class RabbitMQService {
     }
 
     public void publishEvent(String eventType, Object data) {
-        // Simple JSON-like representation or you can use JacksonMessageConverter
-        String message = String.format("{\"event\":\"%s\", \"timestamp\":\"%s\"}", eventType, java.time.Instant.now().toString());
-        rabbitTemplate.convertAndSend(QUEUE_NAME, message);
+        try {
+            // Simple JSON-like representation or you can use JacksonMessageConverter
+            String message = String.format("{\"event\":\"%s\", \"timestamp\":\"%s\"}", eventType, java.time.Instant.now().toString());
+            rabbitTemplate.convertAndSend(QUEUE_NAME, message);
+        } catch (Exception e) {
+            // Fallback gracefully when RabbitMQ is offline
+        }
     }
 }

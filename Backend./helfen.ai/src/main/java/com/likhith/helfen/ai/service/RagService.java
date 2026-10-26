@@ -148,16 +148,20 @@ public class RagService {
             // Normalize BM25 score into 0.0 - 1.0 range
             double normalizedBm25 = Math.min(1.0, bm25Score / Math.max(1.0, queryTokens.size() * 2.5));
 
-            // Keyword exact substring match boost
-            double phraseBoost = chunk.getContent().toLowerCase().contains(query.toLowerCase()) ? 0.25 : 0.0;
+            // Keyword overlap boost
+            long matchedTerms = queryTokens.stream().filter(termFreqs::containsKey).count();
+            double matchRatio = queryTokens.isEmpty() ? 0.0 : (double) matchedTerms / queryTokens.size();
 
-            double finalScore = Math.min(1.0, normalizedBm25 + phraseBoost);
+            // Keyword exact substring match boost
+            double phraseBoost = chunk.getContent().toLowerCase().contains(query.toLowerCase()) ? 0.35 : 0.0;
+
+            double finalScore = Math.min(1.0, normalizedBm25 + (0.4 * matchRatio) + phraseBoost);
             chunk.setScore(Math.round(finalScore * 1000.0) / 1000.0);
         }
 
         // Filter by relevance threshold and sort descending by score
         return allChunks.stream()
-                .filter(c -> c.getScore() > 0.05)
+                .filter(c -> c.getScore() > 0.01)
                 .sorted((a, b) -> Double.compare(b.getScore(), a.getScore()))
                 .limit(topK > 0 ? topK : 5)
                 .collect(Collectors.toList());

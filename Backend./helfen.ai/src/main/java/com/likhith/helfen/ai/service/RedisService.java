@@ -16,8 +16,12 @@ public class RedisService {
 
     public void cacheConversationContext(String conversationId, String context) {
         if (conversationId != null && !conversationId.equals("temp")) {
-            // Cache for 24 hours
-            redisTemplate.opsForValue().set("chat:" + conversationId, context, Duration.ofHours(24));
+            try {
+                // Cache for 24 hours
+                redisTemplate.opsForValue().set("chat:" + conversationId, context, Duration.ofHours(24));
+            } catch (Exception e) {
+                // Fallback gracefully when Redis is offline
+            }
         }
     }
 
@@ -25,6 +29,10 @@ public class RedisService {
         if (conversationId == null || conversationId.equals("temp")) {
             return null;
         }
-        return redisTemplate.opsForValue().get("chat:" + conversationId);
+        try {
+            return redisTemplate.opsForValue().get("chat:" + conversationId);
+        } catch (Exception e) {
+            return null;
+        }
     }
 }
