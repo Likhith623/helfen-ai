@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { useAppStore } from '@/store/appStore'
 import { supabase, getConversationContextData } from '@/lib/supabase'
+import { resolveChatContextAndSummary } from '@/lib/chatContextService'
 import {
   Menu, Plus, MessageSquare, Search, Sparkles,
   Image, Video, BookOpen, Timer, Settings,
@@ -18,8 +19,10 @@ export function Sidebar() {
     activeConversationId, setActiveConversationId,
     conversations, setConversations, addConversation, removeConversation,
     updateConversation, isTemporaryChat, setIsTemporaryChat, setMessages,
-    startNewChatWithContinuation, setContinuationParent,
-    currentUser, userProfile, setIsAuthModalOpen, openShareModal
+    startNewChatWithContinuation, setContinuationParent, continuationParentId,
+    currentUser, userProfile, setIsAuthModalOpen, openShareModal,
+    setIsKnowledgeBaseOpen, setIsTemplateManagerOpen, setIsContextModalOpen,
+    clearContinuationParent
   } = useAppStore()
 
   const [searchQuery, setSearchQuery] = useState('')
@@ -55,6 +58,22 @@ export function Sidebar() {
     setActiveConversationId(null)
     setMessages([])
     setIsTemporaryChat(false)
+    clearContinuationParent()
+    toast.success('Started a fresh conversation')
+  }
+
+  function handleToggleTemporaryChat() {
+    if (isTemporaryChat) {
+      setIsTemporaryChat(false)
+      setMessages([])
+      toast.success('Exited temporary chat')
+    } else {
+      setIsTemporaryChat(true)
+      setActiveConversationId(null)
+      setMessages([])
+      clearContinuationParent()
+      toast.success('Temporary chat active (not saved to history)')
+    }
   }
 
   async function deleteConversation(id: string) {
@@ -75,10 +94,18 @@ export function Sidebar() {
     setActiveMenu(null)
     startNewChatWithContinuation(convId, title)
     try {
-      const data = await getConversationContextData(convId)
-      setContinuationParent(convId, title, data.messagesCount, data.formattedContext)
+      const resolved = await resolveChatContextAndSummary(convId, title)
+      setContinuationParent(
+        convId,
+        title,
+        resolved.messageCount,
+        resolved.formattedContext,
+        resolved.summaryResult
+      )
     } catch (err) {
       console.error('Failed to load continuation context data:', err)
+      const data = await getConversationContextData(convId)
+      setContinuationParent(convId, title, data.messagesCount, data.formattedContext)
     }
     toast.success(`Context linked: "${title}"`, {
       icon: '🔗',
@@ -138,11 +165,10 @@ export function Sidebar() {
       {/* ── HEADER ── */}
       <div className="sidebar-header">
         <div className="sidebar-brand">
-          {/* Gemini-style colourful diamond icon */}
           <div className="sidebar-brand-icon">
             <Sparkles size={14} color="white" />
           </div>
-          <span className="sidebar-brand-name">Helfen</span>
+          <span className="sidebar-brand-name">Helfen AI</span>
         </div>
         <button
           className="sidebar-icon-btn"
@@ -153,55 +179,65 @@ export function Sidebar() {
         </button>
       </div>
 
-      {/* Chat / Spark tabs */}
-      <div className="sidebar-tabs">
-        <button className="sidebar-tab active">Chat</button>
-        <button className="sidebar-tab">Spark <span style={{ fontSize: 10, opacity: 0.6, marginLeft: 4 }}>BETA</span></button>
-      </div>
-
-      {/* ── NAV ITEMS ── */}
+      {/* ── WORKING FEATURES & NAVIGATION ── */}
       <div className="sidebar-nav-group">
-        <button className="sidebar-nav-item active" onClick={newChat}>
+        <button
+          className={`sidebar-nav-item ${!activeConversationId && !isTemporaryChat ? 'active' : ''}`}
+          onClick={newChat}
+          title="Start a new chat"
+        >
           <Plus size={18} />
           <span className="item-label">New chat</span>
         </button>
-        <button className="sidebar-nav-item">
-          <Search size={18} />
-          <span className="item-label">Search chats</span>
-        </button>
-        <button className="sidebar-nav-item">
-          <Sparkles size={18} />
-          <span className="item-label">Students</span>
-        </button>
-        <button className="sidebar-nav-item">
-          <Image size={18} />
-          <span className="item-label">Images</span>
-        </button>
-        <button className="sidebar-nav-item">
-          <Video size={18} />
-          <span className="item-label">Videos</span>
-        </button>
-        <button className="sidebar-nav-item">
-          <BookOpen size={18} />
-          <span className="item-label">Library</span>
-        </button>
-      </div>
 
-      <div className="sidebar-divider" />
-
-      {/* Notebooks */}
-      <div className="sidebar-section">Notebooks</div>
-      <div className="sidebar-nav-group">
-        <button className="sidebar-nav-item">
-          <Plus size={18} />
-          <span className="item-label">New notebook</span>
-        </button>
         <button
           className="sidebar-nav-item"
-          onClick={() => { setIsTemporaryChat(true); setActiveConversationId(null) }}
+          onClick={() => setIsKnowledgeBaseOpen(true)}
+          title="Open RAG Knowledge Base"
+        >
+          <BookOpen size={18} />
+          <span className="item-label">Knowledge Base</span>
+        </button>
+
+        <button
+          className="sidebar-nav-item"
+          onClick={() => setIsTemplateManagerOpen(true)}
+          title="Prompt Templates & Slash Commands"
+        >
+          <Sparkles size={18} />
+          <span className="item-label">Prompt Templates</span>
+        </button>
+
+        <button
+          className="sidebar-nav-item"
+          onClick={() => setIsContextModalOpen(true)}
+          title="Link previous chat context & deep summary"
+        >
+          <Link2 size={18} />
+          <span className="item-label">Link Chat Context</span>
+        </button>
+
+        <button
+          className={`sidebar-nav-item ${isTemporaryChat ? 'temporary-active' : ''}`}
+          onClick={handleToggleTemporaryChat}
+          title={isTemporaryChat ? 'Exit temporary chat' : 'Start temporary unsaved chat'}
         >
           <Timer size={18} />
-          <span className="item-label">Temporary chat</span>
+          <span className="item-label">
+            {isTemporaryChat ? 'Temporary Chat (Active)' : 'Temporary chat'}
+          </span>
+          {isTemporaryChat && (
+            <span
+              className="sidebar-temp-exit-pill"
+              onClick={(e) => {
+                e.stopPropagation()
+                handleToggleTemporaryChat()
+              }}
+              title="Click to exit temporary chat"
+            >
+              Exit
+            </span>
+          )}
         </button>
       </div>
 
@@ -244,6 +280,7 @@ export function Sidebar() {
                     key={conv.id}
                     conv={conv}
                     active={activeConversationId === conv.id}
+                    isLinkedContext={continuationParentId === conv.id}
                     onClick={() => { setActiveConversationId(conv.id); setIsTemporaryChat(false) }}
                     onDelete={() => deleteConversation(conv.id)}
                     onPin={() => pinConversation(conv.id, conv.is_pinned)}
@@ -315,10 +352,11 @@ export function Sidebar() {
 }
 
 function ConvItem({
-  conv, active, onClick, onDelete, onPin, onContinue, onExportPdf, onShare, activeMenu, setActiveMenu, menuRef
+  conv, active, isLinkedContext, onClick, onDelete, onPin, onContinue, onExportPdf, onShare, activeMenu, setActiveMenu, menuRef
 }: {
   conv: { id: string; title: string; is_pinned: boolean }
   active: boolean
+  isLinkedContext?: boolean
   onClick: () => void
   onDelete: () => void
   onPin: () => void
@@ -337,6 +375,11 @@ function ConvItem({
     >
       <MessageSquare size={15} style={{ flexShrink: 0, opacity: 0.7 }} />
       <span className="item-label">{conv.title}</span>
+      {isLinkedContext && (
+        <span className="sidebar-linked-pill" title="Linked context for active chat">
+          <Link2 size={11} />
+        </span>
+      )}
       <div className="item-actions" onClick={e => e.stopPropagation()}>
         {conv.is_pinned && <Pin size={12} style={{ color: 'var(--text-muted)' }} />}
         <button
