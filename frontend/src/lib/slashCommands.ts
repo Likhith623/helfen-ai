@@ -57,6 +57,13 @@ export const BUILTIN_SLASH_COMMANDS: PromptTemplate[] = [
     title: 'Translate',
     description: 'Translate text accurately preserving nuances and tone',
     template: 'Translate the following text accurately into English (or the requested target language), preserving natural tone and idiomatic phrasing:\n\n{input}'
+  },
+  {
+    id: 'cmd-context',
+    command: 'context',
+    title: 'Link Chat Context',
+    description: 'Link memory, deep summary & facts from an earlier chat',
+    template: 'i want you to have a context of "{input}"'
   }
 ]
 

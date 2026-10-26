@@ -14,5 +14,7 @@ public class ChatRequest {
     private List<String> images;
     private String ragContext;
     private List<RagChunk> retrievedChunks;
+    private String referencedConversationId;
+    private String referencedContextSummary;
 }
 
