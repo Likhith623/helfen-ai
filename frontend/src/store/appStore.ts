@@ -34,6 +34,16 @@ export interface PromptTemplate {
   isFavorite?: boolean
 }
 
+export interface ReferencedContextInfo {
+  conversationId: string
+  title: string
+  executiveSummary?: string
+  keyDecisions?: string[]
+  salientTopics?: string[]
+  summary?: string
+  messageCount?: number
+}
+
 export interface Message {
   id: string
   conversation_id: string
@@ -47,6 +57,7 @@ export interface Message {
   attachments?: MessageAttachment[]
   images?: string[]
   retrievedChunks?: RagChunk[]
+  referencedContext?: ReferencedContextInfo
 }
 
 export interface InlineAnnotation {
@@ -80,6 +91,11 @@ export interface Conversation {
   is_archived: boolean
   is_pinned: boolean
   parent_conversation_id?: string | null
+  summary?: string | null
+  summary_metadata?: any | null
+  referenced_conversation_id?: string | null
+  referenced_context_title?: string | null
+  referenced_context_summary?: string | null
   created_at: string
   updated_at: string
 }
@@ -97,16 +113,19 @@ interface AppState {
   continuationParentTitle: string | null
   continuationMessagesCount: number
   continuationContextText: string | null
+  continuationSummaryResult: any | null
   isContextModalOpen: boolean
   setContinuationParent: (
     id: string | null,
     title?: string | null,
     msgCount?: number,
-    contextText?: string | null
+    contextText?: string | null,
+    summaryResult?: any | null
   ) => void
   clearContinuationParent: () => void
   setIsContextModalOpen: (open: boolean) => void
   startNewChatWithContinuation: (parentId: string, parentTitle: string) => void
+
 
   conversations: Conversation[]
   setConversations: (conversations: Conversation[]) => void
@@ -224,20 +243,23 @@ export const useAppStore = create<AppState>()(
           continuationParentTitle: null,
           continuationMessagesCount: 0,
           continuationContextText: null,
+          continuationSummaryResult: null,
         }),
 
       continuationParentId: null,
       continuationParentTitle: null,
       continuationMessagesCount: 0,
       continuationContextText: null,
+      continuationSummaryResult: null,
       isContextModalOpen: false,
 
-      setContinuationParent: (id, title = null, msgCount = 0, contextText = null) =>
+      setContinuationParent: (id, title = null, msgCount = 0, contextText = null, summaryResult = null) =>
         set({
           continuationParentId: id,
           continuationParentTitle: title,
           continuationMessagesCount: msgCount,
           continuationContextText: contextText,
+          continuationSummaryResult: summaryResult,
         }),
 
       clearContinuationParent: () =>
@@ -246,6 +268,7 @@ export const useAppStore = create<AppState>()(
           continuationParentTitle: null,
           continuationMessagesCount: 0,
           continuationContextText: null,
+          continuationSummaryResult: null,
         }),
 
       setIsContextModalOpen: (open) => set({ isContextModalOpen: open }),
@@ -259,7 +282,9 @@ export const useAppStore = create<AppState>()(
           continuationParentTitle: parentTitle,
           continuationMessagesCount: 0,
           continuationContextText: null,
+          continuationSummaryResult: null,
         }),
+
 
       conversations: [],
       setConversations: (conversations) => set({ conversations }),

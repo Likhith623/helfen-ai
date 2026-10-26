@@ -13,11 +13,14 @@ import { ContinuousVoiceModal } from '@/components/ContinuousVoiceModal'
 import { AccountPopover } from '@/components/AccountPopover'
 import { useAppStore } from '@/store/appStore'
 import { supabase, getConversationContextData } from '@/lib/supabase'
+import { resolveChatContextAndSummary } from '@/lib/chatContextService'
 import {
   Sun, Moon, Volume2, VolumeX, History,
-  Download, Edit, Sparkles, Menu, Link2, LogIn, FileText, Share2
+  Download, Edit, Sparkles, Menu, Link2, LogIn, FileText, Share2,
+  BookOpen, Mic, Code2, X
 } from 'lucide-react'
 import { generateConversationPdf } from '@/lib/pdfGenerator'
+import toast from 'react-hot-toast'
 
 const SUGGESTIONS = [
   { icon: '✏️', label: 'Design a book cover for my life story' },
@@ -29,7 +32,7 @@ export default function Home() {
   const {
     theme, toggleTheme, sidebarOpen, setSidebarOpen,
     activeConversationId, setMessages, messages,
-    voiceEnabled, setVoiceEnabled, isTemporaryChat,
+    voiceEnabled, setVoiceEnabled, isTemporaryChat, setIsTemporaryChat,
     setAnnotations, conversations, selectedModel,
     continuationParentId, continuationParentTitle,
     setIsContextModalOpen, startNewChatWithContinuation, setContinuationParent,
@@ -147,18 +150,36 @@ export default function Home() {
               </button>
             )}
             {isTemporaryChat && (
-              <div className="topbar-badge">
-                <History size={13} />
-                Temporary chat
+              <div className="topbar-temp-badge fade-in">
+                <History size={13} style={{ color: '#f59e0b' }} />
+                <span>Temporary chat</span>
+                <button
+                  type="button"
+                  className="topbar-temp-exit-btn"
+                  onClick={() => {
+                    setIsTemporaryChat(false)
+                    setMessages([])
+                    toast.success('Exited temporary chat. Now in regular saved chat.')
+                  }}
+                  title="Exit temporary chat"
+                >
+                  <X size={12} />
+                  <span>Exit</span>
+                </button>
               </div>
             )}
           </div>
 
           <div className="topbar-right">
-            <button className="get-app-btn" title="Get the app">
-              <Download size={14} />
-              Get app
-            </button>
+            {/* Active Model & Engine Status Indicator */}
+            <div className="topbar-status-pill">
+              <span className="status-indicator-dot" />
+              <span className="status-label">
+                {selectedModel === 'gemini-3.5-flash'
+                  ? 'Gemini 3.5 Flash Active'
+                  : 'Ollama & Gemini Ready'}
+              </span>
+            </div>
 
             <button
               className="icon-btn"
@@ -223,10 +244,18 @@ export default function Home() {
                   const title = activeConv?.title || 'Current Chat'
                   startNewChatWithContinuation(activeConversationId, title)
                   try {
-                    const data = await getConversationContextData(activeConversationId)
-                    setContinuationParent(activeConversationId, title, data.messagesCount, data.formattedContext)
+                    const resolved = await resolveChatContextAndSummary(activeConversationId, title)
+                    setContinuationParent(
+                      activeConversationId,
+                      title,
+                      resolved.messageCount,
+                      resolved.formattedContext,
+                      resolved.summaryResult
+                    )
                   } catch (err) {
                     console.error(err)
+                    const data = await getConversationContextData(activeConversationId)
+                    setContinuationParent(activeConversationId, title, data.messagesCount, data.formattedContext)
                   }
                 }}
               >
@@ -274,56 +303,144 @@ export default function Home() {
         {/* ── WELCOME / MESSAGES ── */}
         {isEmpty ? (
           <div className="welcome-screen fade-in">
-            {/* Colourful glow blobs */}
+            {/* Ambient luminous glow backdrops */}
             <div className="welcome-glow" />
-            <div className="welcome-glow-ring" />
+            <div className="welcome-glow-secondary" />
 
-            <h1 className="welcome-heading">Where should we start?</h1>
-
-            {/* Context continuation chip */}
-            {continuationParentId ? (
-              <div
-                className="welcome-continuation-chip"
-                onClick={() => setIsContextModalOpen(true)}
-                title="Click to view or switch context chat"
-              >
-                <span className="welcome-continuation-icon"><Link2 size={14} /></span>
-                <span>Continuing from: <strong>{continuationParentTitle || 'Previous Chat'}</strong></span>
-                <span style={{ fontSize: 11, opacity: 0.7, marginLeft: 4 }}>• Click to change</span>
+            <div className="welcome-hero-content">
+              {/* Iridescent badge */}
+              <div className="welcome-hero-badge">
+                <Sparkles size={14} className="sparkle-gemini" />
+                <span>Context-Aware Multi-Modal Intelligence</span>
               </div>
-            ) : conversations.length > 0 ? (
-              <button
-                type="button"
-                className="welcome-continuation-chip"
-                onClick={() => setIsContextModalOpen(true)}
-                title="Choose an earlier chat to use as context for this new session"
-              >
-                <span className="welcome-continuation-icon"><Link2 size={14} /></span>
-                <span>Continue from a previous chat</span>
-              </button>
-            ) : null}
 
-            {/* Input box rendered at bottom via absolute positioning */}
+              <h1 className="welcome-heading">
+                What would you like to <span className="text-gradient-aurora">explore</span> or <span className="text-gradient-cyan">continue</span>?
+              </h1>
+              <p className="welcome-subheading">
+                Helfen AI seamlessly retains conversational memory across sessions, grounds answers in your documents with hybrid RAG, and conducts real-time neural voice dialogue.
+              </p>
 
-            {/* Suggestion chips */}
-            <div className="welcome-suggestions">
-              {SUGGESTIONS.map((s, i) => (
+              {/* Context continuation banner / trigger */}
+              {continuationParentId ? (
+                <div
+                  className="welcome-continuation-banner"
+                  onClick={() => setIsContextModalOpen(true)}
+                  title="Click to view or switch context chat"
+                >
+                  <div className="welcome-continuation-pulse" />
+                  <div className="welcome-continuation-info">
+                    <span className="banner-tag">Context Active:</span>
+                    <strong className="banner-title">{continuationParentTitle || 'Previous Chat'}</strong>
+                    <span className="banner-action">• Click to change</span>
+                  </div>
+                </div>
+              ) : conversations.length > 0 ? (
                 <button
-                  key={i}
-                  className="suggestion-chip"
+                  type="button"
+                  className="welcome-continuation-banner unlinked"
+                  onClick={() => setIsContextModalOpen(true)}
+                  title="Choose an earlier chat to use as context for this new session"
+                >
+                  <Link2 size={15} className="text-blue" />
+                  <span>Link context from an earlier conversation</span>
+                  <span className="banner-pill-badge">{conversations.length} available</span>
+                </button>
+              ) : null}
+
+              {/* Interactive Showcase Grid */}
+              <div className="welcome-showcase-grid">
+                <div
+                  className="showcase-card"
+                  onClick={() => {
+                    if (conversations.length > 0) {
+                      setIsContextModalOpen(true)
+                    } else {
+                      const ta = document.querySelector<HTMLTextAreaElement>('.chat-textarea')
+                      if (ta) {
+                        ta.value = 'i want you to have a context of "New Chat"'
+                        ta.dispatchEvent(new Event('input', { bubbles: true }))
+                        ta.focus()
+                      }
+                    }
+                  }}
+                >
+                  <div className="showcase-card-icon blue">
+                    <Link2 size={20} />
+                  </div>
+                  <div className="showcase-card-body">
+                    <h3>Chat Memory & Context Linking</h3>
+                    <p>Inherit full decisions, parameters, and deep summaries from earlier discussions.</p>
+                  </div>
+                </div>
+
+                <div
+                  className="showcase-card"
+                  onClick={() => useAppStore.getState().setIsKnowledgeBaseOpen(true)}
+                >
+                  <div className="showcase-card-icon purple">
+                    <BookOpen size={20} />
+                  </div>
+                  <div className="showcase-card-body">
+                    <h3>Hybrid RAG Knowledge Base</h3>
+                    <p>Search and ground responses with vector embeddings, BM25 scoring & source citations.</p>
+                  </div>
+                </div>
+
+                <div
+                  className="showcase-card"
+                  onClick={() => useAppStore.getState().startContinuousVoice()}
+                >
+                  <div className="showcase-card-icon green">
+                    <Mic size={20} />
+                  </div>
+                  <div className="showcase-card-body">
+                    <h3>Two-Way Neural Voice</h3>
+                    <p>Hands-free continuous conversational turn-taking with live voice waveform.</p>
+                  </div>
+                </div>
+
+                <div
+                  className="showcase-card"
                   onClick={() => {
                     const ta = document.querySelector<HTMLTextAreaElement>('.chat-textarea')
                     if (ta) {
-                      ta.value = s.label
+                      ta.value = '/diagram Show the architecture of a real-time reactive streaming system'
                       ta.dispatchEvent(new Event('input', { bubbles: true }))
                       ta.focus()
                     }
                   }}
                 >
-                  <span className="suggestion-chip-icon">{s.icon}</span>
-                  {s.label}
-                </button>
-              ))}
+                  <div className="showcase-card-icon orange">
+                    <Code2 size={20} />
+                  </div>
+                  <div className="showcase-card-body">
+                    <h3>Code & System Architecture</h3>
+                    <p>Interactive Mermaid diagrams, unit tests, and structural code refactoring.</p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Quick suggestion chips */}
+              <div className="welcome-suggestions-row">
+                {SUGGESTIONS.map((s, i) => (
+                  <button
+                    key={i}
+                    className="suggestion-chip-premium"
+                    onClick={() => {
+                      const ta = document.querySelector<HTMLTextAreaElement>('.chat-textarea')
+                      if (ta) {
+                        ta.value = s.label
+                        ta.dispatchEvent(new Event('input', { bubbles: true }))
+                        ta.focus()
+                      }
+                    }}
+                  >
+                    <span className="suggestion-chip-emoji">{s.icon}</span>
+                    <span className="suggestion-chip-text">{s.label}</span>
+                  </button>
+                ))}
+              </div>
             </div>
           </div>
         ) : (

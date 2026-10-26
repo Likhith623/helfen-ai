@@ -3,7 +3,7 @@
 import { useState, useRef, useEffect } from 'react'
 import {
   Send, Mic, StopCircle, ChevronDown, Plus, Link2, X,
-  FileText, Code2, Loader2, Check, Database, BookOpen
+  FileText, Code2, Loader2, Check, Database, BookOpen, History
 } from 'lucide-react'
 import { useAppStore } from '@/store/appStore'
 import { supabase, getConversationContextData } from '@/lib/supabase'
@@ -22,11 +22,19 @@ import {
   syncDocumentToSupabase,
   type RagChunk
 } from '@/lib/ragEngine'
+import {
+  detectContextCommand,
+  findConversationByTitle,
+  resolveChatContextAndSummary,
+  saveReferencedContextToConversation
+} from '@/lib/chatContextService'
+import { streamGeminiChat } from '@/lib/geminiService'
 import type { PromptTemplate } from '@/store/appStore'
 import toast from 'react-hot-toast'
 
 const MODELS = [
-  { id: 'llama3.2:3b', name: 'Flash', desc: 'Fast & responsive text', badge: 'Default' },
+  { id: 'llama3.2:3b', name: 'Flash', desc: 'Fast & responsive text (Ollama)', badge: 'Default' },
+  { id: 'gemini-3.5-flash', name: 'Gemini 3.5 Flash', desc: 'Google Gemini - Deep reasoning & instant streaming', badge: 'Cloud' },
   { id: 'llama3.2-vision', name: 'Vision', desc: 'Multimodal image & document intelligence', badge: 'Vision' },
   { id: 'llava', name: 'LLaVA', desc: 'Visual understanding assistant', badge: 'Vision' },
   { id: 'mistral', name: 'Mistral', desc: 'Deep technical reasoning & coding', badge: 'Pro' },
@@ -50,10 +58,10 @@ export function ChatInput() {
   const {
     isStreaming, setIsStreaming,
     addMessage, activeConversationId, setActiveConversationId,
-    messages, selectedModel, isTemporaryChat, setSelectedModel,
-    setStreamingMessageId, updateMessage, addConversation,
+    messages, setMessages, selectedModel, isTemporaryChat, setIsTemporaryChat, setSelectedModel,
+    setStreamingMessageId, updateMessage, addConversation, conversations,
     continuationParentId, continuationParentTitle, continuationMessagesCount,
-    continuationContextText, clearContinuationParent, setIsContextModalOpen,
+    continuationContextText, setContinuationParent, clearContinuationParent, setIsContextModalOpen,
     pendingAttachments, addPendingAttachment, removePendingAttachment, clearPendingAttachments,
     customTemplates, setCustomTemplates, setIsTemplateManagerOpen,
     ragModeEnabled, knowledgeDocuments, addKnowledgeDocument, setIsKnowledgeBaseOpen,
@@ -195,16 +203,80 @@ export function ChatInput() {
       formatAttachmentsContext(currentAttachments)
 
     let finalPromptContent = content
-    if (docsContext) {
-      finalPromptContent = content
-        ? `${docsContext}\n\n${content}`
-        : `${docsContext}\n\nPlease analyze the attached document(s) and provide a comprehensive summary with key takeaways.`
-    } else if (!content && extractedImages.length > 0) {
-      finalPromptContent = 'Please inspect and describe this image in detail.'
-    }
+    let attachedReferencedContextInfo: any = null
 
+    // 1. Detect if the user is asking to link context from another chat
+    const contextCmd = detectContextCommand(content)
     let convId = activeConversationId
     let resolvedContext = continuationContextText
+
+    if (contextCmd.isContextCommand) {
+      const matchedConv = await findConversationByTitle(contextCmd.chatNameQuery, conversations)
+
+      if (matchedConv) {
+        const toastId = toast.loading(`Resolving context from "${matchedConv.title}"...`, {
+          style: {
+            background: 'var(--bg-card)',
+            color: 'var(--text-primary)',
+            border: '1px solid var(--border)'
+          }
+        })
+
+        try {
+          const resolved = await resolveChatContextAndSummary(matchedConv.id, matchedConv.title)
+          setContinuationParent(
+            matchedConv.id,
+            matchedConv.title,
+            resolved.messageCount,
+            resolved.formattedContext,
+            resolved.summaryResult
+          )
+          resolvedContext = resolved.formattedContext
+          attachedReferencedContextInfo = {
+            conversationId: matchedConv.id,
+            title: matchedConv.title,
+            executiveSummary: resolved.summaryResult.executiveSummary,
+            keyDecisions: resolved.summaryResult.keyDecisions,
+            salientTopics: resolved.summaryResult.salientTopics,
+            summary: resolved.summaryResult.fullStructuredSummary,
+            messageCount: resolved.messageCount
+          }
+
+          if (convId) {
+            saveReferencedContextToConversation(
+              convId,
+              matchedConv.id,
+              matchedConv.title,
+              resolved.formattedContext
+            )
+          }
+
+          toast.success(`Context linked: "${matchedConv.title}"`, {
+            id: toastId,
+            icon: '🔗'
+          })
+        } catch (err) {
+          console.error('Failed to resolve context:', err)
+          toast.error(`Could not load full context for "${matchedConv.title}"`, { id: toastId })
+        }
+
+        if (contextCmd.hasFollowUpQuestion) {
+          finalPromptContent = contextCmd.remainingPrompt
+        } else {
+          finalPromptContent = `I have instructed you to have the context of our previous conversation "${matchedConv.title}". Please acknowledge that you have loaded this context, provide a clear executive summary and key takeaways of that conversation, and let me know how you can assist further.`
+        }
+      } else {
+        toast.error(`Could not find a chat matching "${contextCmd.chatNameQuery}"`, { icon: '🔍' })
+      }
+    }
+
+    if (docsContext) {
+      finalPromptContent = finalPromptContent
+        ? `${docsContext}\n\n${finalPromptContent}`
+        : `${docsContext}\n\nPlease analyze the attached document(s) and provide a comprehensive summary with key takeaways.`
+    } else if (!finalPromptContent && extractedImages.length > 0) {
+      finalPromptContent = 'Please inspect and describe this image in detail.'
+    }
 
     // If context text hasn't been loaded yet, fetch it now
     if (continuationParentId && !resolvedContext) {
@@ -255,6 +327,14 @@ export function ChatInput() {
           convId = data.id
           addConversation(data as any)
           setActiveConversationId(data.id)
+          if (attachedReferencedContextInfo) {
+            saveReferencedContextToConversation(
+              data.id,
+              attachedReferencedContextInfo.conversationId,
+              attachedReferencedContextInfo.title,
+              resolvedContext || ''
+            )
+          }
         }
       } else {
         useAppStore.getState().setIsTemporaryChat(true)
@@ -313,81 +393,120 @@ export function ChatInput() {
       content: '',
       model: selectedModel,
       created_at: new Date().toISOString(),
-      retrievedChunks: retrievedRagChunks.length > 0 ? retrievedRagChunks : undefined
+      retrievedChunks: retrievedRagChunks.length > 0 ? retrievedRagChunks : undefined,
+      referencedContext: attachedReferencedContextInfo || undefined
     })
     setStreamingMessageId(aiMsgId)
     setIsStreaming(true)
 
+    // Build unified messages list for LLMs
+    const allMessagesForLlm = [
+      ...messages.map((m) => ({
+        role: m.role,
+        content: m.content,
+        images: m.images || null
+      })),
+      {
+        role: 'user',
+        content: finalPromptContent,
+        images: extractedImages.length > 0 ? extractedImages : null
+      }
+    ]
+
+    let fullContent = ''
+
+    // Helper: Stream using Gemini API directly
+    const streamWithGemini = async () => {
+      const sysParts: string[] = [
+        'You are Helfen AI, a helpful, harmless, and honest assistant. You provide clear, concise, and accurate responses.'
+      ]
+      if (resolvedContext) sysParts.push(resolvedContext)
+      if (ragSystemPrompt) sysParts.push(ragSystemPrompt)
+
+      await streamGeminiChat(
+        allMessagesForLlm,
+        sysParts.join('\n\n'),
+        (chunk) => {
+          fullContent += chunk
+          updateMessage(aiMsgId, { content: fullContent })
+        }
+      )
+    }
+
     try {
-      const { data: sessionData } = await supabase.auth.getSession()
-      const token = sessionData?.session?.access_token
+      if (selectedModel === 'gemini-3.5-flash') {
+        // Direct cloud Gemini streaming
+        await streamWithGemini()
+      } else {
+        // Try local Spring Boot backend first
+        try {
+          const { data: sessionData } = await supabase.auth.getSession()
+          const token = sessionData?.session?.access_token
 
-      const res = await fetch('http://localhost:8080/api/v1/chat', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          ...(token ? { 'Authorization': `Bearer ${token}` } : {})
-        },
-        body: JSON.stringify({
-          conversationId: convId,
-          parentConversationId: continuationParentId || null,
-          continuationContext: resolvedContext || null,
-          ragContext: ragSystemPrompt || null,
-          retrievedChunks: retrievedRagChunks.length > 0 ? retrievedRagChunks : null,
-          messages: [
-            ...messages.map((m) => ({
-              role: m.role,
-              content: m.content,
-              images: m.images || null
-            })),
-            {
-              role: 'user',
-              content: finalPromptContent,
-              images: extractedImages.length > 0 ? extractedImages : null
-            }
-          ],
-          images: extractedImages.length > 0 ? extractedImages : null,
-          model: selectedModel,
-          isTemporary: isTemporaryChat
-        })
-      })
+          const res = await fetch('http://localhost:8080/api/v1/chat', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              ...(token ? { 'Authorization': `Bearer ${token}` } : {})
+            },
+            body: JSON.stringify({
+              conversationId: convId,
+              parentConversationId: continuationParentId || null,
+              continuationContext: resolvedContext || null,
+              ragContext: ragSystemPrompt || null,
+              retrievedChunks: retrievedRagChunks.length > 0 ? retrievedRagChunks : null,
+              messages: allMessagesForLlm,
+              images: extractedImages.length > 0 ? extractedImages : null,
+              model: selectedModel,
+              isTemporary: isTemporaryChat
+            })
+          })
 
-      if (!res.ok) throw new Error('API error')
+          if (!res.ok) throw new Error(`Backend error: ${res.status}`)
 
-      const reader = res.body?.getReader()
-      if (!reader) throw new Error('No stream')
+          const reader = res.body?.getReader()
+          if (!reader) throw new Error('No stream from backend')
 
-      const decoder = new TextDecoder()
-      let fullContent = ''
-
-      while (true) {
-        const { done, value } = await reader.read()
-        if (done) break
-        const chunk = decoder.decode(value)
-        for (const line of chunk.split('\n').filter(Boolean)) {
-          if (line.startsWith('data:')) {
-            const jsonStr = line.slice(5).trim()
-            if (!jsonStr) continue
-            try {
-              const parsed = JSON.parse(jsonStr)
-              if (parsed.content) {
-                fullContent += parsed.content
-                updateMessage(aiMsgId, { content: fullContent })
+          const decoder = new TextDecoder()
+          while (true) {
+            const { done, value } = await reader.read()
+            if (done) break
+            const chunk = decoder.decode(value)
+            for (const line of chunk.split('\n').filter(Boolean)) {
+              if (line.startsWith('data:')) {
+                const jsonStr = line.slice(5).trim()
+                if (!jsonStr) continue
+                try {
+                  const parsed = JSON.parse(jsonStr)
+                  if (parsed.content) {
+                    fullContent += parsed.content
+                    updateMessage(aiMsgId, { content: fullContent })
+                  }
+                } catch { /* ignore parse errors */ }
               }
-            } catch { /* ignore parse errors */ }
+            }
           }
+        } catch (backendErr) {
+          console.warn('Local backend not responding or returned error, seamlessly streaming with Gemini:', backendErr)
+          // Seamless fallback to Gemini API
+          await streamWithGemini()
         }
       }
 
-      if (convId && !isTemporaryChat) {
+      if (convId && !isTemporaryChat && fullContent) {
         supabase.from('messages').insert({
-          id: aiMsgId, conversation_id: convId,
-          role: 'assistant', content: fullContent, model: selectedModel
+          id: aiMsgId,
+          conversation_id: convId,
+          role: 'assistant',
+          content: fullContent,
+          model: selectedModel
         }).then()
       }
     } catch (err) {
-      console.error(err)
-      updateMessage(aiMsgId, { content: 'Sorry, something went wrong. Please try again.' })
+      console.error('All AI providers failed:', err)
+      updateMessage(aiMsgId, {
+        content: 'Sorry, I encountered an issue processing your request. Please check your network connection and try again.'
+      })
     } finally {
       setIsStreaming(false)
       setStreamingMessageId(null)
@@ -427,6 +546,31 @@ export function ChatInput() {
   return (
     <div className="input-area">
       <div className="input-area-inner">
+        {/* Temporary Chat Notice Banner */}
+        {isTemporaryChat && (
+          <div className="temporary-chat-banner fade-in">
+            <div className="temporary-chat-banner-left">
+              <History size={15} style={{ color: '#f59e0b', flexShrink: 0 }} />
+              <span className="temporary-chat-banner-text">
+                <strong>Temporary Chat Active</strong> — Messages and attachments in this session will not be saved to your history.
+              </span>
+            </div>
+            <button
+              type="button"
+              className="temporary-chat-exit-btn"
+              onClick={() => {
+                setIsTemporaryChat(false)
+                setMessages([])
+                toast.success('Exited temporary chat. Now in regular saved chat.')
+              }}
+              title="Exit temporary chat"
+            >
+              <X size={14} />
+              <span>Exit to Saved Chat</span>
+            </button>
+          </div>
+        )}
+
         {/* Attached continuation context banner */}
         {continuationParentId && (
           <div className="attached-context-banner">

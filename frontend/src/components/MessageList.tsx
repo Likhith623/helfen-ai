@@ -13,7 +13,7 @@ import type { InlineAnnotation } from '@/store/appStore'
 import {
   Copy, ThumbsUp, ThumbsDown, RotateCcw, Volume2, Check,
   VolumeX, MessageSquarePlus, FileText, Code2, Download, X,
-  BookOpen
+  BookOpen, Link2, ChevronDown, Sparkles
 } from 'lucide-react'
 import { generateResponsePdf } from '@/lib/pdfGenerator'
 import { formatFileSize } from '@/lib/fileProcessor'
@@ -48,7 +48,12 @@ export function MessageList() {
   const [copiedId, setCopiedId] = useState<string | null>(null)
   const [generatingPdfId, setGeneratingPdfId] = useState<string | null>(null)
   const [selectedImage, setSelectedImage] = useState<{ url: string; name: string } | null>(null)
+  const [expandedContextIds, setExpandedContextIds] = useState<Record<string, boolean>>({})
   const audioRef = useRef<HTMLAudioElement | null>(null)
+
+  const toggleContextExpand = (msgId: string) => {
+    setExpandedContextIds((prev) => ({ ...prev, [msgId]: !prev[msgId] }))
+  }
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' })
@@ -314,6 +319,85 @@ export function MessageList() {
                   className="assistant-content"
                   data-message-id={msg.id}
                 >
+                  {/* Linked Chat Context & Deep Summary Card */}
+                  {msg.role === 'assistant' && msg.referencedContext && (
+                    <div className="referenced-context-card-wrapper">
+                      <div
+                        className={`referenced-context-pill ${expandedContextIds[msg.id] ? 'is-expanded' : ''}`}
+                        onClick={() => toggleContextExpand(msg.id)}
+                        title="Click to view full summary, key decisions, and facts from this linked conversation"
+                      >
+                        <div className="referenced-context-pill-left">
+                          <Link2 size={13} className="text-blue" />
+                          <span className="context-pill-label">Context Linked:</span>
+                          <strong className="context-pill-title">"{msg.referencedContext.title}"</strong>
+                          {msg.referencedContext.messageCount ? (
+                            <span className="context-pill-count">
+                              ({msg.referencedContext.messageCount} msgs)
+                            </span>
+                          ) : null}
+                        </div>
+                        <div className="referenced-context-pill-right">
+                          <span className="context-pill-action">
+                            {expandedContextIds[msg.id] ? 'Hide Summary' : 'View Deep Summary'}
+                          </span>
+                          <ChevronDown
+                            size={14}
+                            style={{
+                              transform: expandedContextIds[msg.id] ? 'rotate(180deg)' : 'none',
+                              transition: 'transform 0.2s ease'
+                            }}
+                          />
+                        </div>
+                      </div>
+
+                      {expandedContextIds[msg.id] && (
+                        <div className="referenced-context-expanded-drawer fade-in">
+                          {/* Executive Summary */}
+                          {msg.referencedContext.executiveSummary && (
+                            <div className="context-drawer-section">
+                              <div className="context-drawer-header">
+                                <Sparkles size={13} className="text-yellow" />
+                                <span>Executive Summary</span>
+                              </div>
+                              <p className="context-drawer-text">{msg.referencedContext.executiveSummary}</p>
+                            </div>
+                          )}
+
+                          {/* Key Decisions */}
+                          {msg.referencedContext.keyDecisions && msg.referencedContext.keyDecisions.length > 0 && (
+                            <div className="context-drawer-section">
+                              <div className="context-drawer-header">
+                                <Check size={13} className="text-green" />
+                                <span>Key Decisions & Takeaways</span>
+                              </div>
+                              <ul className="context-drawer-list">
+                                {msg.referencedContext.keyDecisions.map((dec, i) => (
+                                  <li key={i}>{dec}</li>
+                                ))}
+                              </ul>
+                            </div>
+                          )}
+
+                          {/* Salient Topics */}
+                          {msg.referencedContext.salientTopics && msg.referencedContext.salientTopics.length > 0 && (
+                            <div className="context-drawer-section">
+                              <div className="context-drawer-header">
+                                <BookOpen size={13} className="text-blue" />
+                                <span>Core Topics & Context Keys</span>
+                              </div>
+                              <div className="context-drawer-tags">
+                                {msg.referencedContext.salientTopics.map((top, i) => (
+                                  <span key={i} className="context-topic-tag">{top}</span>
+                                ))}
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                      )}
+                    </div>
+                  )}
+
                   {msg.id === streamingMessageId && isStreaming && !msg.content ? (
                     <div className="streaming-dots">
                       <span /><span /><span />

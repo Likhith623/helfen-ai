@@ -8,6 +8,7 @@ import {
 } from 'lucide-react'
 import { useAppStore } from '@/store/appStore'
 import { getConversationContextData } from '@/lib/supabase'
+import { resolveChatContextAndSummary } from '@/lib/chatContextService'
 import toast from 'react-hot-toast'
 
 export function ChatContextModal() {
@@ -58,14 +59,15 @@ export function ChatContextModal() {
   const handleSelectConversation = async (convId: string, title: string) => {
     setLoadingId(convId)
     try {
-      const data = await getConversationContextData(convId)
+      const resolved = await resolveChatContextAndSummary(convId, title)
       setContinuationParent(
         convId,
         title,
-        data.messagesCount,
-        data.formattedContext
+        resolved.messageCount,
+        resolved.formattedContext,
+        resolved.summaryResult
       )
-      toast.success(`Context linked: "${title}"`, {
+      toast.success(`Context linked: "${title}" (Deep Summary Ready)`, {
         icon: '🔗',
         style: {
           background: 'var(--bg-card)',
@@ -76,7 +78,8 @@ export function ChatContextModal() {
       setIsContextModalOpen(false)
     } catch (err) {
       console.error('Failed to select conversation context:', err)
-      setContinuationParent(convId, title, 0, null)
+      const data = await getConversationContextData(convId)
+      setContinuationParent(convId, title, data.messagesCount, data.formattedContext)
       setIsContextModalOpen(false)
     } finally {
       setLoadingId(null)
