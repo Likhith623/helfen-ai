@@ -138,7 +138,7 @@ export function KnowledgeBaseModal() {
           </div>
         </div>
 
-        {/* Upload Action */}
+        {/* Upload Action (Centered with Glowing Blue Button) */}
         <div className="kb-upload-bar">
           <input
             ref={fileInputRef}
@@ -150,8 +150,7 @@ export function KnowledgeBaseModal() {
           />
           <button
             type="button"
-            className="btn-primary"
-            style={{ display: 'inline-flex', alignItems: 'center', gap: 8, padding: '8px 16px', fontSize: 13 }}
+            className="kb-upload-btn"
             onClick={() => fileInputRef.current?.click()}
             disabled={isUploading}
           >
@@ -169,9 +168,10 @@ export function KnowledgeBaseModal() {
                   toast.success('Knowledge base cleared')
                 }
               }}
+              title="Clear all indexed documents"
             >
               <Trash2 size={13} />
-              <span>Clear Knowledge Base</span>
+              <span>Clear</span>
             </button>
           )}
         </div>

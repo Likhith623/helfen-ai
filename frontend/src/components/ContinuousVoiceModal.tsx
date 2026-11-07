@@ -332,8 +332,24 @@ export function ContinuousVoiceModal() {
 
   if (!isContinuousVoiceActive) return null
 
+  const isLight = theme === 'light'
+
   return (
-    <div className={`voice-modal-backdrop ${theme}`} data-theme={theme}>
+    <div
+      className={`voice-modal-backdrop ${theme}`}
+      data-theme={theme}
+      style={
+        isLight
+          ? {
+              background: 'radial-gradient(circle at center, #ffffff 0%, #f1f5f9 100%)',
+              color: '#0f172a'
+            }
+          : {
+              background: 'radial-gradient(circle at center, #101522 0%, #07090e 100%)',
+              color: '#f8fafc'
+            }
+      }
+    >
       <div className="voice-modal-shell">
         {/* Top Header */}
         <div className="voice-modal-topbar">
@@ -368,7 +384,7 @@ export function ContinuousVoiceModal() {
             status={voiceModeStatus}
             volumeLevel={voiceIsMuted ? 0 : voiceVolumeLevel}
             frequencyData={vadRef.current?.frequencyData}
-            size={250}
+            size={240}
             theme={theme}
           />
 

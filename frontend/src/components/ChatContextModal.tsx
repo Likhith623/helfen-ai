@@ -105,9 +105,6 @@ export function ChatContextModal() {
         aria-modal="true"
         aria-labelledby="context-modal-title"
       >
-        {/* Glow halo */}
-        <div className="context-modal-glow" />
-
         {/* Header */}
         <div className="context-modal-header">
           <div className="context-modal-header-info">
