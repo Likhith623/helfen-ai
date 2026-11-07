@@ -46,12 +46,7 @@ export function AccountPopover({ isOpen, onClose }: AccountPopoverProps) {
     onClose()
     await signOut()
     toast('Signed out', {
-      icon: '👋',
-      style: {
-        background: 'var(--bg-card)',
-        color: 'var(--text-primary)',
-        border: '1px solid var(--border)'
-      }
+      icon: '👋'
     })
   }
 

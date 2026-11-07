@@ -89,12 +89,7 @@ export function ChatContextModal() {
   const handleClear = () => {
     clearContinuationParent()
     toast('Context unlinked — new chat will start fresh', {
-      icon: '✨',
-      style: {
-        background: 'var(--bg-card)',
-        color: 'var(--text-primary)',
-        border: '1px solid var(--border)'
-      }
+      icon: '✨'
     })
   }
 

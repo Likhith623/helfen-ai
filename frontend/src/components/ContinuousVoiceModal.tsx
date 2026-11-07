@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState, useCallback } from 'react'
 import {
   Mic, MicOff, PhoneOff, Volume2, VolumeX, Sparkles,
-  X, Check, AlertCircle, MessageSquare, RefreshCw
+  X, Check, AlertCircle, MessageSquare, RefreshCw, Sun, Moon
 } from 'lucide-react'
 import { useAppStore } from '@/store/appStore'
 import { VoiceWaveformOrb } from '@/components/VoiceWaveformOrb'
@@ -22,7 +22,8 @@ export function ContinuousVoiceModal() {
     voiceIsMuted, toggleVoiceMute,
     selectedModel, activeConversationId, setActiveConversationId,
     addMessage, updateMessage, addConversation, isTemporaryChat,
-    ragModeEnabled, knowledgeDocuments
+    ragModeEnabled, knowledgeDocuments,
+    theme, toggleTheme
   } = useAppStore()
 
   const [errorMsg, setErrorMsg] = useState<string | null>(null)
@@ -332,7 +333,7 @@ export function ContinuousVoiceModal() {
   if (!isContinuousVoiceActive) return null
 
   return (
-    <div className="voice-modal-backdrop">
+    <div className={`voice-modal-backdrop ${theme}`} data-theme={theme}>
       <div className="voice-modal-shell">
         {/* Top Header */}
         <div className="voice-modal-topbar">
@@ -341,14 +342,24 @@ export function ContinuousVoiceModal() {
             <span>Helfen Voice • {selectedModel}</span>
           </div>
 
-          <button
-            type="button"
-            className="voice-close-icon-btn"
-            onClick={stopContinuousVoice}
-            title="End voice conversation"
-          >
-            <X size={20} />
-          </button>
+          <div className="voice-topbar-actions">
+            <button
+              type="button"
+              className="voice-theme-toggle-btn"
+              onClick={toggleTheme}
+              title={theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'}
+            >
+              {theme === 'dark' ? <Sun size={18} /> : <Moon size={18} />}
+            </button>
+            <button
+              type="button"
+              className="voice-close-icon-btn"
+              onClick={stopContinuousVoice}
+              title="End voice conversation"
+            >
+              <X size={20} />
+            </button>
+          </div>
         </div>
 
         {/* Central Visualizer Orb */}
@@ -357,7 +368,8 @@ export function ContinuousVoiceModal() {
             status={voiceModeStatus}
             volumeLevel={voiceIsMuted ? 0 : voiceVolumeLevel}
             frequencyData={vadRef.current?.frequencyData}
-            size={220}
+            size={250}
+            theme={theme}
           />
 
           {/* Status Label Pill */}
