@@ -134,8 +134,41 @@ input, textarea { font-family: inherit; }
   display: flex;
   align-items: center;
   gap: 8px;
-  padding: 4px 4px;
+  padding: 2px 4px;
+  cursor: pointer;
+  user-select: none;
+  transition: opacity 0.2s var(--ease), transform 0.2s var(--ease);
 }
+.sidebar-brand:hover {
+  opacity: 0.88;
+  transform: translateY(-0.5px);
+}
+
+.helfen-logo-img {
+  height: 32px;
+  width: auto;
+  max-width: 120px;
+  object-fit: contain;
+  display: block;
+}
+
+.helfen-logo-dark {
+  display: block;
+}
+.helfen-logo-light {
+  display: none;
+}
+
+[data-theme='light'] .helfen-logo-dark,
+.light .helfen-logo-dark {
+  display: none !important;
+}
+
+[data-theme='light'] .helfen-logo-light,
+.light .helfen-logo-light {
+  display: block !important;
+}
+
 .sidebar-brand-icon {
   width: 28px;
   height: 28px;

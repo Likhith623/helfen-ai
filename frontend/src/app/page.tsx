@@ -33,7 +33,8 @@ export default function Home() {
     continuationParentId, continuationParentTitle,
     setIsContextModalOpen, startNewChatWithContinuation, setContinuationParent,
     currentUser, userProfile, setCurrentUser, setUserProfile, setIsAuthModalOpen,
-    openShareModal, clearContinuationParent
+    openShareModal, clearContinuationParent,
+    setIsKnowledgeBaseOpen, setIsTemplateManagerOpen
   } = useAppStore()
 
   const [isAccountOpen, setIsAccountOpen] = useState(false)
@@ -156,14 +157,26 @@ export default function Home() {
                     setMessages([])
                     setIsTemporaryChat(false)
                     clearContinuationParent()
+                    setIsContextModalOpen(false)
+                    setIsKnowledgeBaseOpen(false)
+                    setIsTemplateManagerOpen(false)
+                    if (typeof window !== 'undefined') {
+                      window.history.pushState({}, '', '/')
+                    }
                   }}
                   style={{ cursor: 'pointer', padding: '2px 4px' }}
-                  title="Go to Home"
+                  title="Helfen — Go to Home"
                 >
-                  <div className="sidebar-brand-icon" style={{ width: 26, height: 26 }}>
-                    <Sparkles size={13} color="white" />
-                  </div>
-                  <span className="sidebar-brand-name" style={{ fontSize: '15px' }}>Helfen AI</span>
+                  <img
+                    src="/logo-dark.png"
+                    alt="Helfen"
+                    className="helfen-logo-img helfen-logo-dark"
+                  />
+                  <img
+                    src="/logo-light.png"
+                    alt="Helfen"
+                    className="helfen-logo-img helfen-logo-light"
+                  />
                 </div>
               </div>
             )}
@@ -326,7 +339,7 @@ export default function Home() {
                 What would you like to <span className="text-gradient-aurora">explore</span> or <span className="text-gradient-cyan">continue</span>?
               </h1>
               <p className="welcome-subheading">
-                Helfen AI seamlessly retains conversational memory across sessions, grounds answers in your documents with hybrid RAG, and conducts real-time neural voice dialogue.
+                Helfen seamlessly retains conversational memory across sessions, grounds answers in your documents with hybrid RAG, and conducts real-time neural voice dialogue.
               </p>
 
               {/* Context continuation banner / trigger */}

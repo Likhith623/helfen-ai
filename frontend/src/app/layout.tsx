@@ -10,12 +10,12 @@ const inter = Inter({
 })
 
 export const metadata: Metadata = {
-  title: 'Helfen AI — Smart Contextual Chat',
+  title: 'Helfen — Smart Contextual Chat',
   description: 'AI chat with inline contextual learning. Select any text to ask questions right there.',
   keywords: ['AI', 'chat', 'learning', 'contextual', 'helfen'],
-  authors: [{ name: 'Helfen AI' }],
+  authors: [{ name: 'Helfen' }],
   openGraph: {
-    title: 'Helfen AI',
+    title: 'Helfen',
     description: 'AI chat with inline contextual learning',
     type: 'website',
   },

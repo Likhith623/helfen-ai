@@ -231,7 +231,7 @@ export function KnowledgeBaseModal() {
               <div className="kb-empty-box">
                 <Database size={32} />
                 <p>No documents indexed yet.</p>
-                <span>Upload PDFs, Markdown notes, or source files to ground Helfen AI in your own knowledge.</span>
+                <span>Upload PDFs, Markdown notes, or source files to ground Helfen in your own knowledge.</span>
               </div>
             ) : (
               knowledgeDocuments.map((doc) => (

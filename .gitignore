@@ -1,0 +1,15 @@
+# Root gitignore
+darkmode.png
+lightmide.png
+*.png
+*.jpg
+*.jpeg
+frontend/public/logo-*.png
+frontend/public/logo-*.jpg
+frontend/public/logo-*.jpeg
+
+# Dependencies
+node_modules/
+.next/
+target/
+.DS_Store

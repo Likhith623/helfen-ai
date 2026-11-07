@@ -174,20 +174,19 @@ function SharedChatContent() {
       {/* Top Navbar */}
       <header className="shared-page-header">
         <div className="shared-header-left">
-          <Link href="/" className="shared-brand-link" title="Go to Helfen AI">
-            <div className="message-avatar ai" style={{ width: 28, height: 28 }}>
-              <svg width="18" height="18" viewBox="0 0 28 28" fill="none">
-                <path d="M14 3L25 9V19L14 25L3 19V9L14 3Z" fill="url(#grad-share)" />
-                <defs>
-                  <linearGradient id="grad-share" x1="3" y1="3" x2="25" y2="25">
-                    <stop stopColor="#4285f4" />
-                    <stop offset="0.5" stopColor="#9c27b0" />
-                    <stop offset="1" stopColor="#fbbc05" />
-                  </linearGradient>
-                </defs>
-              </svg>
-            </div>
-            <span className="shared-brand-name">Helfen.AI</span>
+          <Link href="/" className="shared-brand-link" title="Go to Helfen">
+            <img
+              src="/logo-dark.png"
+              alt="Helfen"
+              className="helfen-logo-img helfen-logo-dark"
+              style={{ height: 28 }}
+            />
+            <img
+              src="/logo-light.png"
+              alt="Helfen"
+              className="helfen-logo-img helfen-logo-light"
+              style={{ height: 28 }}
+            />
           </Link>
           <span className="shared-badge">Public Snapshot</span>
         </div>
@@ -260,7 +259,7 @@ function SharedChatContent() {
                       </defs>
                     </svg>
                   </div>
-                  <span className="message-role-label">Helfen AI</span>
+                  <span className="message-role-label">Helfen</span>
                 </div>
               )}
 
@@ -301,7 +300,7 @@ function SharedChatContent() {
           <div className="shared-bottom-cta">
             <div className="shared-bottom-cta-text">
               <h3>Want to ask follow-up questions?</h3>
-              <p>Fork this chat into your Helfen AI workspace to continue the thread with full context.</p>
+              <p>Fork this chat into your Helfen workspace to continue the thread with full context.</p>
             </div>
             <button
               type="button"
@@ -327,8 +326,18 @@ export default function SharedChatPage() {
           <header className="shared-nav-header">
             <div className="shared-nav-inner">
               <Link href="/" className="shared-logo">
-                <span className="logo-icon"><Sparkles size={18} /></span>
-                <span className="logo-text">Helfen AI</span>
+                <img
+                  src="/logo-dark.png"
+                  alt="Helfen"
+                  className="helfen-logo-img helfen-logo-dark"
+                  style={{ height: 26 }}
+                />
+                <img
+                  src="/logo-light.png"
+                  alt="Helfen"
+                  className="helfen-logo-img helfen-logo-light"
+                  style={{ height: 26 }}
+                />
               </Link>
             </div>
           </header>

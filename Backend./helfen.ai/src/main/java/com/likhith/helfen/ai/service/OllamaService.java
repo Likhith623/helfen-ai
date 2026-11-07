@@ -32,7 +32,7 @@ public class OllamaService {
         String memoryContext = redisService.getConversationContext(request.getConversationId());
         
         StringBuilder systemPromptBuilder = new StringBuilder();
-        systemPromptBuilder.append("You are Helfen AI, a helpful, harmless, and honest AI assistant. You provide clear, concise, and accurate responses.");
+        systemPromptBuilder.append("You are Helfen, a helpful, harmless, and honest assistant. You provide clear, concise, and accurate responses.");
 
         // If this conversation is a continuation of an earlier conversation, inject continuation context
         if (request.getReferencedContextSummary() != null && !request.getReferencedContextSummary().isBlank()) {

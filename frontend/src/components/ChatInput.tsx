@@ -435,7 +435,7 @@ export function ChatInput() {
     // Helper: Stream using Gemini API directly
     const streamWithGemini = async () => {
       const sysParts: string[] = [
-        'You are Helfen AI, a helpful, harmless, and honest assistant. You provide clear, concise, and accurate responses.'
+        'You are Helfen, a helpful, harmless, and honest assistant. You provide clear, concise, and accurate responses.'
       ]
       if (resolvedContext) sysParts.push(resolvedContext)
       if (ragSystemPrompt) sysParts.push(ragSystemPrompt)
@@ -736,7 +736,7 @@ export function ChatInput() {
                 value={input}
                 onChange={e => setInput(e.target.value)}
                 onKeyDown={handleKeyDown}
-                placeholder={isDragging ? 'Drop files here to analyze...' : 'Ask Helfen AI, attach files or images'}
+                placeholder={isDragging ? 'Drop files here to analyze...' : 'Ask Helfen, attach files or images'}
                 rows={1}
                 disabled={isStreaming}
               />
@@ -869,7 +869,7 @@ export function ChatInput() {
         </div>
 
         <div className="input-hint">
-          Helfen AI can make mistakes. Select text in any response to ask inline questions.
+          Helfen can make mistakes. Select text in any response to ask inline questions.
         </div>
       </div>
 

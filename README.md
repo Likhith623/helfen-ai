@@ -1,4 +1,4 @@
-# Helfen.AI 🤖✨
+# Helfen 🤖✨
 
 A next-generation, context-aware AI assistant platform engineered with **Spring Boot**, **Next.js 16**, **Supabase**, **Google Gemini**, **Ollama**, **Cartesia**, **Deepgram**, **Redis**, and **RabbitMQ**. Features multi-turn streaming, neural voice synthesis, full-duplex speech, inline annotation sub-chats, RAG knowledge retrieval, and **Deep Conversation Context Referencing & Memory Distillation**.
 
@@ -22,7 +22,7 @@ A next-generation, context-aware AI assistant platform engineered with **Spring 
 As AI conversations grow long, they hit context window limits, become sluggish, or lose focus. Starting a new chat wipes previous memory, forcing users to re-explain complex architectural decisions, requirements, and constraints.
 
 ### The Solution
-Helfen AI introduces **Natural Language Context Referencing**:
+Helfen introduces **Natural Language Context Referencing**:
 
 1. **Natural Language Command:** Simply type:
    > *"I want you to have a context of 'System Architecture Discussion'"*
@@ -201,4 +201,4 @@ graph TD
 
 ## 📄 License
 
-MIT License. Designed and built with ❤️ by the Helfen AI Team.
+MIT License. Designed and built with ❤️ by the Helfen Team.

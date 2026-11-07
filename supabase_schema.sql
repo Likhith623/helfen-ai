@@ -1,5 +1,5 @@
 -- ============================================================
--- Helfen.AI Supabase Schema
+-- Helfen Supabase Schema
 -- Run this entire file in the Supabase SQL Editor
 -- ============================================================
 

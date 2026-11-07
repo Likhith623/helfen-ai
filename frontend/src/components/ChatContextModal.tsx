@@ -333,7 +333,7 @@ export function ChatContextModal() {
         <div className="context-modal-footer">
           <div className="footer-tip">
             💡 <strong>Pro Tip:</strong> When a previous chat is linked as
-            context, Helfen AI recalls earlier decisions, instructions, and facts
+            context, Helfen recalls earlier decisions, instructions, and facts
             without filling up the new chat’s history.
           </div>
         </div>

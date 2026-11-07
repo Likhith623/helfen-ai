@@ -355,7 +355,7 @@ export function MessageList() {
           ? activeConv.title
           : promptText
             ? promptText.slice(0, 50) + (promptText.length > 50 ? '...' : '')
-            : 'Helfen AI Response'
+            : 'Helfen Response'
 
       await generateResponsePdf(msg.content, {
         title: derivedTitle,

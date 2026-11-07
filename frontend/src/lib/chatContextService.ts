@@ -1,5 +1,5 @@
 /**
- * Chat Context & Referencing Service for Helfen AI
+ * Chat Context & Referencing Service for Helfen
  * Handles natural language intent detection, fuzzy conversation matching,
  * and deep analytical summary generation & caching.
  */

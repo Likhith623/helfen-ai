@@ -8,7 +8,7 @@ export interface PdfExportOptions {
 }
 
 /**
- * Draws professional Helfen AI centered header and branding banner
+ * Draws professional Helfen centered header and branding banner
  */
 function drawHeader(doc: jsPDF, title: string, model: string, dateStr: string): number {
   const pageWidth = doc.internal.pageSize.getWidth()
@@ -22,7 +22,7 @@ function drawHeader(doc: jsPDF, title: string, model: string, dateStr: string): 
   doc.setFont('helvetica', 'bold')
   doc.setFontSize(18)
   doc.setTextColor(15, 23, 42) // #0f172a
-  doc.text('Helfen.AI', centerX, 15, { align: 'center' })
+  doc.text('Helfen', centerX, 15, { align: 'center' })
 
   // Name of Chat - Centered below website name in small size
   doc.setFont('helvetica', 'normal')
@@ -62,7 +62,7 @@ function drawFooters(doc: jsPDF): void {
     doc.setFont('helvetica', 'normal')
     doc.setFontSize(8)
     doc.setTextColor(148, 163, 184)
-    doc.text('Helfen.AI • Intelligent Contextual Assistant', 20, pageHeight - 7)
+    doc.text('Helfen • Intelligent Contextual Assistant', 20, pageHeight - 7)
     doc.text(`Page ${i} of ${pageCount}`, pageWidth - 20, pageHeight - 7, { align: 'right' })
   }
 }
@@ -575,7 +575,7 @@ export async function generateConversationPdf(
       doc.setFont('helvetica', 'bold')
       doc.setFontSize(9.5)
       doc.setTextColor(37, 99, 235)
-      doc.text(`Helfen.AI (${msg.model || model})${timeLabel}`, 20, currentY + 4)
+      doc.text(`Helfen (${msg.model || model})${timeLabel}`, 20, currentY + 4)
       currentY += 6
 
       currentY = renderMarkdownContent(doc, msg.content, currentY, contentWidth, maxY)

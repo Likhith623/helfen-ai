@@ -258,7 +258,7 @@ export function AuthModal() {
             </div>
             <div className="auth-modal-brand-text">
               <h2 id="auth-modal-title" className="auth-modal-title">
-                {tab === 'signin' ? 'Sign in to Helfen AI' : 'Create your account'}
+                {tab === 'signin' ? 'Sign in to Helfen' : 'Create your account'}
               </h2>
               <p className="auth-modal-subtitle">
                 {tab === 'signin'

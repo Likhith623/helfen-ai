@@ -67,7 +67,7 @@ export function AccountPopover({ isOpen, onClose }: AccountPopoverProps) {
       <div className="account-popover-status">
         <div className="account-status-badge">
           <Sparkles size={12} color="var(--blue)" />
-          <span>Helfen AI Pro</span>
+          <span>Helfen Pro</span>
         </div>
         <div className="account-status-tag">
           <Check size={11} /> Active

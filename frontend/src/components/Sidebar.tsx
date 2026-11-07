@@ -171,14 +171,25 @@ export function Sidebar() {
             setMessages([])
             setIsTemporaryChat(false)
             clearContinuationParent()
+            setIsContextModalOpen(false)
+            setIsKnowledgeBaseOpen(false)
+            if (typeof window !== 'undefined') {
+              window.history.pushState({}, '', '/')
+            }
           }}
           style={{ cursor: 'pointer' }}
-          title="Go to Home"
+          title="Helfen — Go to Home"
         >
-          <div className="sidebar-brand-icon">
-            <Sparkles size={14} color="white" />
-          </div>
-          <span className="sidebar-brand-name">Helfen AI</span>
+          <img
+            src="/logo-dark.png"
+            alt="Helfen"
+            className="helfen-logo-img helfen-logo-dark"
+          />
+          <img
+            src="/logo-light.png"
+            alt="Helfen"
+            className="helfen-logo-img helfen-logo-light"
+          />
         </div>
         <button
           className="sidebar-icon-btn"

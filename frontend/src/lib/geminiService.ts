@@ -1,5 +1,5 @@
 /**
- * Gemini Service for Helfen AI
+ * Gemini Service for Helfen
  * Handles intelligent analytical summaries, chat context distillation,
  * and conversational generation using Google Gemini.
  */
@@ -245,7 +245,7 @@ ${formattedTranscript}
   try {
     const rawAiSummary = await callGemini(
       prompt,
-      'You are Helfen AI Context Summarizer. You specialize in dense, high-signal conversational summarization with zero loss of critical context.'
+      'You are Helfen Context Summarizer. You specialize in dense, high-signal conversational summarization with zero loss of critical context.'
     )
 
     // Extract sections for structured UI presentation
