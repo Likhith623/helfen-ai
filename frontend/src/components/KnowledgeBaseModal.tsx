@@ -1,6 +1,7 @@
 'use client'
 
-import { useState, useRef } from 'react'
+import { useState, useRef, useEffect } from 'react'
+import { createPortal } from 'react-dom'
 import {
   X, Database, UploadCloud, Trash2, Search, FileText,
   Code2, Check, Sparkles, Layers, Sliders, AlertCircle
@@ -18,11 +19,16 @@ export function KnowledgeBaseModal() {
     sidebarOpen
   } = useAppStore()
 
+  const [mounted, setMounted] = useState(false)
   const [testQuery, setTestQuery] = useState('')
   const [isUploading, setIsUploading] = useState(false)
   const fileInputRef = useRef<HTMLInputElement>(null)
 
-  if (!isKnowledgeBaseOpen) return null
+  useEffect(() => {
+    setMounted(true)
+  }, [])
+
+  if (!mounted || !isKnowledgeBaseOpen) return null
 
   // Flatten all chunks across all indexed documents
   const allChunks = knowledgeDocuments.flatMap((doc) => doc.chunks)
@@ -78,7 +84,7 @@ export function KnowledgeBaseModal() {
     if (fileInputRef.current) fileInputRef.current.value = ''
   }
 
-  return (
+  return createPortal(
     <div
       className="kb-modal-backdrop"
       onClick={() => setIsKnowledgeBaseOpen(false)}
@@ -265,6 +271,7 @@ export function KnowledgeBaseModal() {
           </div>
         </div>
       </div>
-    </div>
+    </div>,
+    document.body
   )
 }

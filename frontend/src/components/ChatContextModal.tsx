@@ -317,13 +317,6 @@ export function ChatContextModal() {
             })
           )}
         </div>
-
-        {/* Footer info (Single clean line) */}
-        <div className="context-modal-footer">
-          <div className="footer-tip-oneline">
-            💡 <strong>Pro Tip:</strong> When a previous chat is linked as context, Helfen recalls earlier decisions, instructions, and facts without filling up the new chat’s history.
-          </div>
-        </div>
       </div>
     </div>,
     document.body
