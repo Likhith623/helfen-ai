@@ -1,7 +1,7 @@
 import { createClient } from '@supabase/supabase-js'
 
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!
-const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://placeholder.supabase.co'
+const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || 'placeholder-key'
 
 export const supabase = createClient(supabaseUrl, supabaseAnonKey)
 
@@ -103,20 +103,32 @@ export type Database = {
           selected_text: string
           start_offset: number
           end_offset: number
-          annotation_type: 'question' | 'definition' | 'explanation' | 'translation'
+          annotation_type: 'question' | 'definition' | 'explanation' | 'translation' | 'note'
+          note?: string | null
+          color?: string | null
           is_resolved: boolean
           created_at: string
+          updated_at?: string
         }
         Insert: {
+          id?: string
           message_id: string
           conversation_id: string
           selected_text: string
           start_offset: number
           end_offset: number
-          annotation_type?: 'question' | 'definition' | 'explanation' | 'translation'
+          annotation_type?: 'question' | 'definition' | 'explanation' | 'translation' | 'note'
+          note?: string | null
+          color?: string | null
+          is_resolved?: boolean
+          created_at?: string
+          updated_at?: string
         }
         Update: {
           is_resolved?: boolean
+          note?: string | null
+          color?: string | null
+          updated_at?: string
         }
       }
       inline_messages: {

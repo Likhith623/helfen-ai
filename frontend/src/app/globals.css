@@ -1243,8 +1243,448 @@ input, textarea { font-family: inherit; }
   color: white;
 }
 .selection-popup-btn.primary:hover { opacity: 0.9; transform: scale(1.02); }
+.selection-popup-btn.note-btn {
+  background: rgba(250, 204, 21, 0.12);
+  color: #fde047;
+  border: 1px solid rgba(250, 204, 21, 0.25);
+}
+.selection-popup-btn.note-btn:hover {
+  background: rgba(250, 204, 21, 0.22);
+  border-color: rgba(250, 204, 21, 0.45);
+  transform: scale(1.02);
+}
 .selection-popup-btn.secondary { background: var(--bg-hover); color: var(--text-primary); }
 .selection-popup-btn.secondary:hover { background: var(--bg-active); }
+
+/* Selection Popup Note Mode */
+.selection-popup.note-mode {
+  border-radius: 18px;
+  padding: 0;
+  width: 320px;
+  flex-direction: column;
+}
+
+.selection-note-card {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  padding: 12px 14px;
+  gap: 10px;
+}
+.selection-note-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+.selection-note-title-wrap {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  color: var(--text-secondary);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.selection-note-title strong {
+  color: var(--text-primary);
+  font-weight: 600;
+}
+.selection-note-close {
+  background: transparent;
+  border: none;
+  color: var(--text-muted);
+  cursor: pointer;
+  padding: 2px;
+  border-radius: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: var(--t);
+}
+.selection-note-close:hover {
+  color: var(--text-primary);
+  background: var(--bg-hover);
+}
+.selection-note-textarea {
+  width: 100%;
+  background: var(--bg-input);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 8px 10px;
+  font-size: 13px;
+  color: var(--text-primary);
+  resize: none;
+  font-family: inherit;
+  line-height: 1.4;
+  outline: none;
+  transition: var(--t);
+}
+.selection-note-textarea:focus {
+  border-color: var(--yellow);
+  box-shadow: 0 0 0 2px rgba(251, 188, 5, 0.2);
+}
+.selection-note-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+.selection-note-colors {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+.selection-color-label {
+  font-size: 11px;
+  color: var(--text-muted);
+  margin-right: 2px;
+}
+.selection-color-dot {
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  border: 2px solid transparent;
+  cursor: pointer;
+  padding: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: transform 0.15s ease, border-color 0.15s ease;
+}
+.selection-color-dot:hover {
+  transform: scale(1.15);
+}
+.selection-color-dot.active {
+  border-color: white;
+  box-shadow: 0 0 6px rgba(255, 255, 255, 0.4);
+  transform: scale(1.1);
+}
+.selection-color-dot .check-icon {
+  color: #1e2028;
+}
+.selection-note-actions {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.selection-note-cancel {
+  padding: 5px 10px;
+  border: 1px solid var(--border);
+  background: transparent;
+  color: var(--text-secondary);
+  border-radius: 8px;
+  font-size: 12px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: var(--t);
+}
+.selection-note-cancel:hover {
+  background: var(--bg-hover);
+  color: var(--text-primary);
+}
+.selection-note-save {
+  padding: 5px 12px;
+  border: none;
+  background: linear-gradient(135deg, #f59e0b, #d97706);
+  color: white;
+  border-radius: 8px;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: var(--t);
+  box-shadow: 0 2px 8px rgba(217, 119, 6, 0.3);
+}
+.selection-note-save:hover {
+  opacity: 0.95;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(217, 119, 6, 0.45);
+}
+
+/* ===== NOTE HIGHLIGHTS ON WORDS ===== */
+.annotated-note {
+  display: inline-flex;
+  align-items: center;
+  border-radius: 4px;
+  padding: 1px 4px;
+  margin: 0 1px;
+  cursor: pointer;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  text-decoration: none;
+  font-weight: inherit;
+  vertical-align: baseline;
+}
+
+/* Yellow (Default highlighter) */
+.annotated-note.note-color-yellow {
+  background: rgba(250, 204, 21, 0.28);
+  border-bottom: 2px solid #eab308;
+  color: inherit;
+}
+.annotated-note.note-color-yellow:hover {
+  background: rgba(250, 204, 21, 0.42);
+  box-shadow: 0 0 10px rgba(250, 204, 21, 0.3);
+}
+
+/* Green (Mint / Emerald) */
+.annotated-note.note-color-green {
+  background: rgba(74, 222, 128, 0.25);
+  border-bottom: 2px solid #22c55e;
+  color: inherit;
+}
+.annotated-note.note-color-green:hover {
+  background: rgba(74, 222, 128, 0.38);
+  box-shadow: 0 0 10px rgba(74, 222, 128, 0.3);
+}
+
+/* Blue (Sky / Electric) */
+.annotated-note.note-color-blue {
+  background: rgba(96, 165, 250, 0.25);
+  border-bottom: 2px solid #3b82f6;
+  color: inherit;
+}
+.annotated-note.note-color-blue:hover {
+  background: rgba(96, 165, 250, 0.38);
+  box-shadow: 0 0 10px rgba(96, 165, 250, 0.3);
+}
+
+/* Purple (Lavender / Violet) */
+.annotated-note.note-color-purple {
+  background: rgba(192, 132, 252, 0.25);
+  border-bottom: 2px solid #a855f7;
+  color: inherit;
+}
+.annotated-note.note-color-purple:hover {
+  background: rgba(192, 132, 252, 0.38);
+  box-shadow: 0 0 10px rgba(192, 132, 252, 0.3);
+}
+
+/* Pink (Rose / Coral) */
+.annotated-note.note-color-pink {
+  background: rgba(251, 113, 133, 0.25);
+  border-bottom: 2px solid #f43f5e;
+  color: inherit;
+}
+.annotated-note.note-color-pink:hover {
+  background: rgba(251, 113, 133, 0.38);
+  box-shadow: 0 0 10px rgba(251, 113, 133, 0.3);
+}
+
+/* Note pin icon next to the highlighted word */
+.note-indicator-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  margin-left: 3px;
+  vertical-align: middle;
+  opacity: 0.85;
+  transition: transform 0.2s ease, opacity 0.2s ease;
+}
+.annotated-note:hover .note-indicator-icon {
+  transform: scale(1.2) rotate(-8deg);
+  opacity: 1;
+}
+.inline-note-pin {
+  vertical-align: middle;
+}
+
+/* ===== NOTE VIEW POPOVER ===== */
+.note-popover-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 999;
+  background: rgba(0, 0, 0, 0.35);
+  backdrop-filter: blur(2px);
+  animation: fadeIn 0.15s ease both;
+}
+
+.note-popover-card.glass-modal {
+  position: fixed;
+  z-index: 1000;
+  width: 340px;
+  background: var(--bg-glass, rgba(18, 20, 27, 0.9));
+  backdrop-filter: blur(30px) saturate(200%);
+  -webkit-backdrop-filter: blur(30px) saturate(200%);
+  border: 1px solid var(--border-strong);
+  border-radius: 18px;
+  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.4), 0 0 0 1px var(--border);
+  padding: 14px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  animation: modalPopIn 0.2s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+.note-popover-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.note-popover-title-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  overflow: hidden;
+}
+
+.note-color-badge-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.note-popover-word-title {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-primary);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.note-popover-close-btn {
+  background: transparent;
+  border: none;
+  color: var(--text-muted);
+  cursor: pointer;
+  padding: 3px;
+  border-radius: 6px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: var(--t);
+  flex-shrink: 0;
+}
+.note-popover-close-btn:hover {
+  color: var(--text-primary);
+  background: var(--bg-hover);
+}
+
+.note-popover-body {
+  border-radius: 8px;
+  padding: 10px 12px;
+  max-height: 180px;
+  overflow-y: auto;
+}
+
+.note-popover-text {
+  font-size: 13px;
+  line-height: 1.5;
+  color: var(--text-primary);
+  white-space: pre-wrap;
+  word-break: break-word;
+  margin: 0;
+}
+
+.note-popover-text-placeholder {
+  font-size: 12px;
+  font-style: italic;
+  color: var(--text-muted);
+  margin: 0;
+}
+
+.note-popover-meta {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 11px;
+  color: var(--text-muted);
+}
+
+.note-meta-date {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.note-meta-color-label {
+  font-weight: 500;
+  text-transform: capitalize;
+}
+
+.note-popover-actions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding-top: 4px;
+  border-top: 1px solid var(--border);
+}
+
+.note-actions-right {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.note-btn-danger {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  padding: 6px 10px;
+  background: transparent;
+  border: 1px solid rgba(239, 68, 68, 0.25);
+  color: #f87171;
+  border-radius: 8px;
+  font-size: 12px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: var(--t);
+}
+.note-btn-danger:hover {
+  background: rgba(239, 68, 68, 0.15);
+  border-color: rgba(239, 68, 68, 0.4);
+}
+
+.note-btn-secondary {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  padding: 6px 11px;
+  background: var(--bg-hover);
+  border: 1px solid var(--border);
+  color: var(--text-primary);
+  border-radius: 8px;
+  font-size: 12px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: var(--t);
+}
+.note-btn-secondary:hover {
+  background: var(--bg-active);
+}
+
+.note-btn-primary {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  padding: 6px 12px;
+  background: linear-gradient(135deg, var(--blue), var(--purple));
+  border: none;
+  color: white;
+  border-radius: 8px;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: var(--t);
+  box-shadow: 0 2px 8px rgba(66, 133, 244, 0.3);
+}
+.note-btn-primary:hover {
+  opacity: 0.95;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(66, 133, 244, 0.45);
+}
+
+.note-popover-edit-mode {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  width: 100%;
+}
 
 /* ===== INLINE CHAT GLASS POPUP ===== */
 .inline-chat-overlay {

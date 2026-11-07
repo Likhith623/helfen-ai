@@ -67,9 +67,12 @@ export interface InlineAnnotation {
   selected_text: string
   start_offset: number
   end_offset: number
-  annotation_type: 'question' | 'definition' | 'explanation' | 'translation'
+  annotation_type: 'question' | 'definition' | 'explanation' | 'translation' | 'note'
+  note?: string | null
+  color?: 'yellow' | 'green' | 'blue' | 'purple' | 'pink' | string | null
   is_resolved: boolean
   created_at: string
+  updated_at?: string
   messages?: InlineMessage[]
 }
 
@@ -142,6 +145,7 @@ interface AppState {
   setAnnotations: (messageId: string, annotations: InlineAnnotation[]) => void
   addAnnotation: (messageId: string, annotation: InlineAnnotation) => void
   updateAnnotation: (annotationId: string, updates: Partial<InlineAnnotation>) => void
+  deleteAnnotation: (messageId: string, annotationId: string) => void
 
   isStreaming: boolean
   setIsStreaming: (v: boolean) => void
@@ -329,6 +333,16 @@ export const useAppStore = create<AppState>()(
           }
           return { annotations: newAnnotations }
         }),
+      deleteAnnotation: (messageId, annotationId) =>
+        set((state) => {
+          const newAnnotations = { ...state.annotations }
+          if (newAnnotations[messageId]) {
+            newAnnotations[messageId] = newAnnotations[messageId].filter(
+              (a) => a.id !== annotationId
+            )
+          }
+          return { annotations: newAnnotations }
+        }),
 
       isStreaming: false,
       setIsStreaming: (v) => set({ isStreaming: v }),
@@ -483,6 +497,7 @@ export const useAppStore = create<AppState>()(
         customTemplates: state.customTemplates,
         ragModeEnabled: state.ragModeEnabled,
         knowledgeDocuments: state.knowledgeDocuments,
+        annotations: state.annotations,
       }),
     }
   )

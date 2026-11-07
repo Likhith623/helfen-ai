@@ -83,9 +83,12 @@ CREATE TABLE IF NOT EXISTS inline_annotations (
   selected_text TEXT NOT NULL,
   start_offset INTEGER NOT NULL,
   end_offset INTEGER NOT NULL,
-  annotation_type TEXT DEFAULT 'question' CHECK (annotation_type IN ('question', 'definition', 'explanation', 'translation')),
+  annotation_type TEXT DEFAULT 'question' CHECK (annotation_type IN ('question', 'definition', 'explanation', 'translation', 'note')),
+  note TEXT,
+  color TEXT DEFAULT 'yellow',
   is_resolved BOOLEAN DEFAULT false,
-  created_at TIMESTAMPTZ DEFAULT NOW()
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  updated_at TIMESTAMPTZ DEFAULT NOW()
 );
 
 ALTER TABLE inline_annotations ENABLE ROW LEVEL SECURITY;
@@ -187,6 +190,9 @@ CREATE TRIGGER update_messages_updated_at BEFORE UPDATE ON messages
 CREATE TRIGGER update_memories_updated_at BEFORE UPDATE ON memories
   FOR EACH ROW EXECUTE FUNCTION update_updated_at();
 
+CREATE TRIGGER update_inline_annotations_updated_at BEFORE UPDATE ON inline_annotations
+  FOR EACH ROW EXECUTE FUNCTION update_updated_at();
+
 CREATE OR REPLACE FUNCTION handle_new_user()
 RETURNS TRIGGER AS $$
 BEGIN
@@ -219,6 +225,7 @@ CREATE INDEX IF NOT EXISTS idx_conversations_updated_at ON conversations(updated
 CREATE INDEX IF NOT EXISTS idx_messages_conversation_id ON messages(conversation_id);
 CREATE INDEX IF NOT EXISTS idx_messages_created_at ON messages(created_at);
 CREATE INDEX IF NOT EXISTS idx_inline_annotations_message_id ON inline_annotations(message_id);
+CREATE INDEX IF NOT EXISTS idx_inline_annotations_type ON inline_annotations(annotation_type);
 CREATE INDEX IF NOT EXISTS idx_inline_messages_annotation_id ON inline_messages(annotation_id);
 CREATE INDEX IF NOT EXISTS idx_memories_user_id ON memories(user_id);
 CREATE INDEX IF NOT EXISTS idx_shared_conversations_token ON shared_conversations(share_token);

@@ -7,13 +7,14 @@ import ReactMarkdown from 'react-markdown'
 import remarkGfm from 'remark-gfm'
 import rehypeHighlight from 'rehype-highlight'
 import 'highlight.js/styles/github-dark.css'
-import { InlineSelectionPopup } from './InlineSelectionPopup'
+import { InlineSelectionPopup, type HighlightColor } from './InlineSelectionPopup'
 import { InlineChatPopup } from './InlineChatPopup'
+import { NoteViewPopover } from './NoteViewPopover'
 import type { InlineAnnotation } from '@/store/appStore'
 import {
   Copy, ThumbsUp, ThumbsDown, RotateCcw, Volume2, Check,
   VolumeX, MessageSquarePlus, FileText, Code2, Download, X,
-  BookOpen, Link2, ChevronDown, Sparkles
+  BookOpen, Link2, ChevronDown, Sparkles, StickyNote
 } from 'lucide-react'
 import { generateResponsePdf } from '@/lib/pdfGenerator'
 import { formatFileSize } from '@/lib/fileProcessor'
@@ -44,6 +45,10 @@ export function MessageList() {
   const containerRef = useRef<HTMLDivElement>(null)
   const [selection, setSelection] = useState<SelectionState | null>(null)
   const [inlineChat, setInlineChat] = useState<InlineChatState | null>(null)
+  const [activeNote, setActiveNote] = useState<{
+    annotation: InlineAnnotation
+    anchorRect: { x: number; y: number; width?: number; height?: number }
+  } | null>(null)
   const [playingId, setPlayingId] = useState<string | null>(null)
   const [copiedId, setCopiedId] = useState<string | null>(null)
   const [generatingPdfId, setGeneratingPdfId] = useState<string | null>(null)
@@ -130,6 +135,21 @@ export function MessageList() {
 
     useAppStore.getState().addAnnotation(selection.messageId, ann)
 
+    try {
+      supabase.from('inline_annotations').insert({
+        id: ann.id,
+        message_id: ann.message_id,
+        conversation_id: ann.conversation_id,
+        selected_text: ann.selected_text,
+        start_offset: ann.start_offset,
+        end_offset: ann.end_offset,
+        annotation_type: 'question',
+        is_resolved: false,
+      }).then()
+    } catch (err) {
+      console.error('Failed to save annotation to Supabase:', err)
+    }
+
     // Find element Y position for the annotation
     const msgEl = document.querySelector(`[data-message-id="${selection.messageId}"]`)
     const msgRect = msgEl?.getBoundingClientRect()
@@ -138,6 +158,133 @@ export function MessageList() {
     setInlineChat({ annotation: ann, messageId: selection.messageId, anchorY })
     setSelection(null)
     window.getSelection()?.removeAllRanges()
+  }
+
+  async function handleTakeNote(noteText: string, color: HighlightColor) {
+    if (!selection) return
+    const messageId = selection.messageId
+    const activeConvId = useAppStore.getState().activeConversationId || ''
+
+    const newAnnotation: InlineAnnotation = {
+      id: crypto.randomUUID(),
+      message_id: messageId,
+      conversation_id: activeConvId,
+      selected_text: selection.text,
+      start_offset: selection.startOffset,
+      end_offset: selection.endOffset,
+      annotation_type: 'note',
+      note: noteText,
+      color: color,
+      is_resolved: false,
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
+    }
+
+    useAppStore.getState().addAnnotation(messageId, newAnnotation)
+
+    try {
+      supabase.from('inline_annotations').insert({
+        id: newAnnotation.id,
+        message_id: newAnnotation.message_id,
+        conversation_id: newAnnotation.conversation_id,
+        selected_text: newAnnotation.selected_text,
+        start_offset: newAnnotation.start_offset,
+        end_offset: newAnnotation.end_offset,
+        annotation_type: 'note',
+        note: newAnnotation.note,
+        color: newAnnotation.color,
+        is_resolved: false,
+      }).then()
+    } catch (err) {
+      console.error('Failed to save note to Supabase:', err)
+    }
+
+    setSelection(null)
+    window.getSelection()?.removeAllRanges()
+    toast.success('Note attached to highlight!', {
+      icon: '📝',
+      style: {
+        background: 'var(--bg-card)',
+        color: 'var(--text-primary)',
+        border: '1px solid var(--border)'
+      }
+    })
+  }
+
+  function openExistingNote(ann: InlineAnnotation, targetEl: HTMLElement) {
+    const rect = targetEl.getBoundingClientRect()
+    setActiveNote({
+      annotation: ann,
+      anchorRect: {
+        x: rect.left,
+        y: rect.top,
+        width: rect.width,
+        height: rect.height,
+      },
+    })
+  }
+
+  async function handleUpdateNote(annotationId: string, noteText: string, color: HighlightColor) {
+    useAppStore.getState().updateAnnotation(annotationId, {
+      note: noteText,
+      color: color,
+      updated_at: new Date().toISOString(),
+    })
+
+    try {
+      await supabase
+        .from('inline_annotations')
+        .update({
+          note: noteText,
+          color: color,
+          updated_at: new Date().toISOString(),
+        })
+        .eq('id', annotationId)
+    } catch (err) {
+      console.error('Failed to update note in Supabase:', err)
+    }
+
+    toast.success('Note updated!')
+  }
+
+  async function handleDeleteNote(messageId: string, annotationId: string) {
+    useAppStore.getState().deleteAnnotation(messageId, annotationId)
+
+    try {
+      await supabase
+        .from('inline_annotations')
+        .delete()
+        .eq('id', annotationId)
+    } catch (err) {
+      console.error('Failed to delete note from Supabase:', err)
+    }
+
+    toast.success('Note deleted and unhighlighted')
+  }
+
+  function handleAskAiFromNote(selectedText: string) {
+    if (!activeNote) return
+    const messageId = activeNote.annotation.message_id
+    const ann: InlineAnnotation = {
+      id: crypto.randomUUID(),
+      message_id: messageId,
+      conversation_id: useAppStore.getState().activeConversationId || '',
+      selected_text: selectedText,
+      start_offset: 0,
+      end_offset: selectedText.length,
+      annotation_type: 'question',
+      is_resolved: false,
+      created_at: new Date().toISOString(),
+      messages: [],
+    }
+
+    useAppStore.getState().addAnnotation(messageId, ann)
+
+    const msgEl = document.querySelector(`[data-message-id="${messageId}"]`)
+    const msgRect = msgEl?.getBoundingClientRect()
+    const anchorY = msgRect ? msgRect.bottom + window.scrollY + 16 : 200
+
+    setInlineChat({ annotation: ann, messageId, anchorY })
   }
 
   async function playTTS(messageId: string, content: string) {
@@ -256,7 +403,7 @@ export function MessageList() {
               )}
 
               {msg.role === 'user' ? (
-                <div className="user-bubble">
+                <div className="user-bubble" data-message-id={msg.id}>
                   {/* Attached files and images */}
                   {msg.attachments && msg.attachments.length > 0 && (
                     <div className="message-attachments-container">
@@ -312,7 +459,21 @@ export function MessageList() {
                     </div>
                   )}
 
-                  {msg.content && <div className="user-text-content">{msg.content}</div>}
+                  {msg.content && (
+                    <div className="user-text-content">
+                      {msgAnnotations.length > 0 ? (
+                        <AnnotatedContent
+                          content={msg.content}
+                          messageId={msg.id}
+                          annotations={msgAnnotations}
+                          onAnnotationClick={openExistingAnnotation}
+                          onNoteClick={openExistingNote}
+                        />
+                      ) : (
+                        msg.content
+                      )}
+                    </div>
+                  )}
                 </div>
               ) : (
                 <div
@@ -408,6 +569,7 @@ export function MessageList() {
                       messageId={msg.id}
                       annotations={msgAnnotations}
                       onAnnotationClick={openExistingAnnotation}
+                      onNoteClick={openExistingNote}
                     />
                   )}
 
@@ -496,7 +658,20 @@ export function MessageList() {
           y={selection.y}
           text={selection.text}
           onAsk={handleAskAboutSelection}
+          onTakeNote={handleTakeNote}
           onClose={() => setSelection(null)}
+        />
+      )}
+
+      {/* Note view and edit popover */}
+      {activeNote && (
+        <NoteViewPopover
+          annotation={activeNote.annotation}
+          anchorRect={activeNote.anchorRect}
+          onUpdate={handleUpdateNote}
+          onDelete={handleDeleteNote}
+          onAskAi={handleAskAiFromNote}
+          onClose={() => setActiveNote(null)}
         />
       )}
 
@@ -544,14 +719,100 @@ export function MessageList() {
   )
 }
 
-// Renders message content with annotation highlights
+// Safely injects note and question anchor links into Markdown without breaking syntax
+function injectAnnotationsIntoMarkdown(content: string, annotations: InlineAnnotation[]): string {
+  if (!annotations || annotations.length === 0) return content
+  const valid = annotations.filter((a) => a && a.selected_text && a.selected_text.trim().length > 0)
+  if (valid.length === 0) return content
+
+  type Match = { ann: InlineAnnotation; index: number; length: number }
+  const matches: Match[] = []
+
+  for (const ann of valid) {
+    const target = ann.selected_text
+    let foundIndex = -1
+
+    // 1. Direct slice test
+    if (content.slice(ann.start_offset, ann.start_offset + target.length) === target) {
+      foundIndex = ann.start_offset
+    } else {
+      // 2. All occurrences of target
+      const indices: number[] = []
+      let pos = 0
+      while (pos < content.length) {
+        const idx = content.indexOf(target, pos)
+        if (idx === -1) break
+        indices.push(idx)
+        pos = idx + 1
+      }
+
+      if (indices.length > 0) {
+        // Choose closest to ann.start_offset
+        let closest = indices[0]
+        let minDiff = Math.abs(closest - ann.start_offset)
+        for (let i = 1; i < indices.length; i++) {
+          const diff = Math.abs(indices[i] - ann.start_offset)
+          if (diff < minDiff) {
+            minDiff = diff
+            closest = indices[i]
+          }
+        }
+        foundIndex = closest
+      } else {
+        // 3. Case-insensitive fallback
+        const lowerContent = content.toLowerCase()
+        const lowerTarget = target.toLowerCase()
+        const lowerIdx = lowerContent.indexOf(lowerTarget)
+        if (lowerIdx !== -1) {
+          foundIndex = lowerIdx
+        }
+      }
+    }
+
+    if (foundIndex !== -1) {
+      matches.push({
+        ann,
+        index: foundIndex,
+        length: target.length,
+      })
+    }
+  }
+
+  // Sort descending by index so replacing doesn't shift earlier indices
+  matches.sort((a, b) => b.index - a.index)
+
+  let result = content
+  let lastOccupiedStart = Infinity
+
+  for (const m of matches) {
+    const matchEnd = m.index + m.length
+    if (matchEnd > lastOccupiedStart) continue // skip overlaps
+
+    const prefix = m.ann.annotation_type === 'note' ? 'note' : 'annotation'
+    const before = result.slice(0, m.index)
+    const text = result.slice(m.index, matchEnd)
+    const after = result.slice(matchEnd)
+
+    result = `${before}[${text}](#${prefix}:${m.ann.id})${after}`
+    lastOccupiedStart = m.index
+  }
+
+  return result
+}
+
+// Renders message content with annotation highlights and note markers
 function AnnotatedContent({
-  content, messageId, annotations, onAnnotationClick
+  content,
+  messageId,
+  annotations,
+  onAnnotationClick,
+  onNoteClick,
 }: {
   content: string
   messageId: string
   annotations: InlineAnnotation[]
   onAnnotationClick: (ann: InlineAnnotation) => void
+  onNoteClick: (ann: InlineAnnotation, targetEl: HTMLElement) => void
 }) {
   if (annotations.length === 0) {
     return (
@@ -561,46 +822,66 @@ function AnnotatedContent({
     )
   }
 
-  // Build a single markdown string with injected links for annotations
-  let mdString = content
-  // Sort descending by start_offset so insertions don't shift earlier offsets
-  const sorted = [...annotations].sort((a, b) => b.start_offset - a.start_offset)
-
-  for (const ann of sorted) {
-    const before = mdString.slice(0, ann.start_offset)
-    const after = mdString.slice(ann.end_offset)
-    const text = mdString.slice(ann.start_offset, ann.end_offset)
-    // We use a special href format to detect these during rendering
-    mdString = `${before}[${text}](#annotation:${ann.id})${after}`
-  }
+  const mdString = injectAnnotationsIntoMarkdown(content, annotations)
 
   return (
     <ReactMarkdown
       remarkPlugins={[remarkGfm]}
       components={{
         a: ({ node, href, children, ...props }) => {
+          if (href?.startsWith('#note:')) {
+            const annId = href.split(':')[1]
+            const ann = annotations.find((a) => a.id === annId)
+            if (ann) {
+              const color = ann.color || 'yellow'
+              return (
+                <mark
+                  className={`annotated-note note-color-${color}`}
+                  onClick={(e) => {
+                    e.preventDefault()
+                    e.stopPropagation()
+                    onNoteClick(ann, e.currentTarget)
+                  }}
+                  title={ann.note ? `Note: "${ann.note}"` : `Note highlight on "${ann.selected_text}"`}
+                >
+                  {children}
+                  <span className="note-indicator-icon" title="View note">
+                    <StickyNote size={12} className="inline-note-pin" />
+                  </span>
+                </mark>
+              )
+            }
+          }
+
           if (href?.startsWith('#annotation:')) {
             const annId = href.split(':')[1]
-            const ann = annotations.find(a => a.id === annId)
+            const ann = annotations.find((a) => a.id === annId)
             if (ann) {
               return (
                 <span
                   className="annotated-text"
-                  onClick={() => onAnnotationClick(ann)}
+                  onClick={(e) => {
+                    e.preventDefault()
+                    e.stopPropagation()
+                    onAnnotationClick(ann)
+                  }}
                   title="Click to view sub-chat"
                 >
                   {children}
                   <span className="annotation-indicator">
-                    {(ann.messages?.length || 0) > 0
-                      ? ann.messages!.length
-                      : '?'}
+                    {(ann.messages?.length || 0) > 0 ? ann.messages!.length : '?'}
                   </span>
                 </span>
               )
             }
           }
-          return <a href={href} {...props}>{children}</a>
-        }
+
+          return (
+            <a href={href} target="_blank" rel="noopener noreferrer" {...props}>
+              {children}
+            </a>
+          )
+        },
       }}
     >
       {mdString}
