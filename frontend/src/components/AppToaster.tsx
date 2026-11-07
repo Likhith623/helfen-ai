@@ -1,20 +1,29 @@
 'use client'
 
+import { useEffect, useState } from 'react'
 import { Toaster } from 'react-hot-toast'
 import { useAppStore } from '@/store/appStore'
 
 export function AppToaster() {
   const theme = useAppStore((s) => s.theme)
   const sidebarOpen = useAppStore((s) => s.sidebarOpen)
+  const [mounted, setMounted] = useState(false)
+
+  useEffect(() => {
+    setMounted(true)
+  }, [])
 
   const isLight = theme === 'light'
+  // When mounted, use real store state; on SSR, default to open
+  const isSidebarVisible = mounted ? sidebarOpen : true
 
   return (
     <Toaster
       position="top-center"
+      containerClassName={isSidebarVisible ? 'toaster-sidebar-open' : 'toaster-sidebar-closed'}
       containerStyle={{
         top: 24,
-        left: sidebarOpen ? 268 : 0,
+        left: isSidebarVisible ? 268 : 0,
         right: 0,
         transition: 'left 0.25s cubic-bezier(0.4, 0, 0.2, 1)',
         pointerEvents: 'none',

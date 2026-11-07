@@ -18,8 +18,7 @@ export function ChatContextModal() {
     conversations,
     continuationParentId,
     setContinuationParent,
-    clearContinuationParent,
-    sidebarOpen
+    clearContinuationParent
   } = useAppStore()
 
   const [searchQuery, setSearchQuery] = useState('')

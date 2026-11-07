@@ -15,8 +15,7 @@ export function KnowledgeBaseModal() {
   const {
     isKnowledgeBaseOpen, setIsKnowledgeBaseOpen,
     knowledgeDocuments, addKnowledgeDocument, removeKnowledgeDocument, clearKnowledgeBase,
-    ragModeEnabled, toggleRagMode,
-    sidebarOpen
+    ragModeEnabled, toggleRagMode
   } = useAppStore()
 
   const [mounted, setMounted] = useState(false)

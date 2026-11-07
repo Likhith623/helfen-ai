@@ -6157,6 +6157,24 @@ input, textarea { font-family: inherit; }
 }
 
 /* ===== TOASTER NOTIFICATION STYLING ===== */
+[data-rht-toaster] {
+  top: 24px !important;
+  right: 0px !important;
+  bottom: auto !important;
+  pointer-events: none !important;
+  transition: left 0.25s cubic-bezier(0.4, 0, 0.2, 1) !important;
+}
+
+[data-rht-toaster].toaster-sidebar-open {
+  left: var(--sidebar-w, 268px) !important;
+  right: 0px !important;
+}
+
+[data-rht-toaster].toaster-sidebar-closed {
+  left: 0px !important;
+  right: 0px !important;
+}
+
 .toast-custom {
   font-family: var(--font-inter), -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif !important;
   font-size: 13.5px !important;

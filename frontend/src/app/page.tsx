@@ -16,7 +16,7 @@ import { supabase, getConversationContextData } from '@/lib/supabase'
 import { resolveChatContextAndSummary } from '@/lib/chatContextService'
 import {
   Sun, Moon, Volume2, VolumeX, History,
-  Download, Edit, Sparkles, ChevronRight, Link2, LogIn, FileText, Share2,
+  Edit, ChevronRight, Link2, LogIn, FileText, Share2,
   BookOpen, Mic, Code2, X
 } from 'lucide-react'
 import { generateConversationPdf } from '@/lib/pdfGenerator'
@@ -30,7 +30,6 @@ export default function Home() {
     activeConversationId, setActiveConversationId, setMessages, messages,
     voiceEnabled, setVoiceEnabled, isTemporaryChat, setIsTemporaryChat,
     setAnnotations, conversations, selectedModel,
-    continuationParentId, continuationParentTitle,
     setIsContextModalOpen, startNewChatWithContinuation, setContinuationParent,
     currentUser, userProfile, setCurrentUser, setUserProfile, setIsAuthModalOpen,
     openShareModal, clearContinuationParent,
@@ -124,7 +123,7 @@ export default function Home() {
       .subscribe()
 
     return () => { supabase.removeChannel(sub) }
-  }, [activeConversationId])
+  }, [activeConversationId, setAnnotations, setMessages])
 
   const isEmpty = messages.length === 0
 

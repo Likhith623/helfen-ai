@@ -12,7 +12,7 @@ import remarkGfm from 'remark-gfm'
 import rehypeHighlight from 'rehype-highlight'
 import 'highlight.js/styles/github-dark.css'
 import {
-  Sparkles, GitFork, ArrowLeft, Download, User, Calendar,
+  GitFork, ArrowLeft, Download, User, Calendar,
   Code2, FileText, Check, ExternalLink, ShieldCheck, Share2
 } from 'lucide-react'
 import toast from 'react-hot-toast'
