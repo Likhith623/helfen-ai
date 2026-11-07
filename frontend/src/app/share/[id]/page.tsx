@@ -179,13 +179,13 @@ function SharedChatContent() {
               src="/logo-dark.png"
               alt="Helfen"
               className="helfen-logo-img helfen-logo-dark"
-              style={{ height: 28 }}
+              style={{ height: '34px', width: 'auto', maxHeight: '36px', maxWidth: '115px', objectFit: 'contain' }}
             />
             <img
               src="/logo-light.png"
               alt="Helfen"
               className="helfen-logo-img helfen-logo-light"
-              style={{ height: 28 }}
+              style={{ height: '34px', width: 'auto', maxHeight: '36px', maxWidth: '115px', objectFit: 'contain' }}
             />
           </Link>
           <span className="shared-badge">Public Snapshot</span>

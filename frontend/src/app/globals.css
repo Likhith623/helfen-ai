@@ -137,21 +137,21 @@ input, textarea { font-family: inherit; }
   padding: 2px 4px;
   cursor: pointer;
   user-select: none;
-  max-width: 120px;
-  max-height: 32px;
+  max-width: 150px;
+  max-height: 48px;
   overflow: hidden;
   transition: opacity 0.2s var(--ease), transform 0.2s var(--ease);
 }
 .sidebar-brand:hover {
-  opacity: 0.88;
+  opacity: 0.9;
   transform: translateY(-0.5px);
 }
 
 .helfen-logo-img {
-  height: 24px !important;
+  height: 38px !important;
   width: auto !important;
-  max-height: 24px !important;
-  max-width: 85px !important;
+  max-height: 40px !important;
+  max-width: 125px !important;
   object-fit: contain !important;
   display: block;
   user-select: none;

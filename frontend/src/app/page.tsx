@@ -171,13 +171,13 @@ export default function Home() {
                     src="/logo-dark.png"
                     alt="Helfen"
                     className="helfen-logo-img helfen-logo-dark"
-                    style={{ height: '22px', width: 'auto', maxHeight: '22px', maxWidth: '80px', objectFit: 'contain' }}
+                    style={{ height: '34px', width: 'auto', maxHeight: '36px', maxWidth: '115px', objectFit: 'contain' }}
                   />
                   <img
                     src="/logo-light.png"
                     alt="Helfen"
                     className="helfen-logo-img helfen-logo-light"
-                    style={{ height: '22px', width: 'auto', maxHeight: '22px', maxWidth: '80px', objectFit: 'contain' }}
+                    style={{ height: '34px', width: 'auto', maxHeight: '36px', maxWidth: '115px', objectFit: 'contain' }}
                   />
                 </div>
               </div>

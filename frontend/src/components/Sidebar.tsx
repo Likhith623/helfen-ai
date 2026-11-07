@@ -184,13 +184,13 @@ export function Sidebar() {
             src="/logo-dark.png"
             alt="Helfen"
             className="helfen-logo-img helfen-logo-dark"
-            style={{ height: '24px', width: 'auto', maxHeight: '24px', maxWidth: '85px', objectFit: 'contain' }}
+            style={{ height: '38px', width: 'auto', maxHeight: '40px', maxWidth: '125px', objectFit: 'contain' }}
           />
           <img
             src="/logo-light.png"
             alt="Helfen"
             className="helfen-logo-img helfen-logo-light"
-            style={{ height: '24px', width: 'auto', maxHeight: '24px', maxWidth: '85px', objectFit: 'contain' }}
+            style={{ height: '38px', width: 'auto', maxHeight: '40px', maxWidth: '125px', objectFit: 'contain' }}
           />
         </div>
         <button
