@@ -73,7 +73,7 @@ function drawFooters(doc: jsPDF): void {
 }
 
 /**
- * Renders structured markdown (headings, code blocks, lists, paragraphs) into the PDF
+ * Renders structured markdown (headings, code blocks, lists, numbered lists, blockquotes, tables, paragraphs) into the PDF
  */
 function renderMarkdownContent(
   doc: jsPDF,
@@ -94,7 +94,7 @@ function renderMarkdownContent(
     }
   }
 
-  // Split lines while tracking code blocks
+  // Split lines while tracking blocks
   const lines = content.split('\n')
   let inCodeBlock = false
   let codeBuffer: string[] = []
@@ -102,32 +102,32 @@ function renderMarkdownContent(
   for (let i = 0; i < lines.length; i++) {
     const rawLine = lines[i]
 
-    // Handle code block toggles
+    // 1. Handle code block toggles
     if (rawLine.trim().startsWith('```')) {
       if (inCodeBlock) {
         // End of code block: render collected code
         if (codeBuffer.length > 0) {
           doc.setFont('courier', 'normal')
-          doc.setFontSize(9)
+          doc.setFontSize(8.5)
           const codeLines: string[] = []
           codeBuffer.forEach((cLine) => {
-            const wrapped = doc.splitTextToSize(cLine, contentWidth - 10)
+            const wrapped = doc.splitTextToSize(cLine, contentWidth - 12)
             codeLines.push(...wrapped)
           })
 
-          const boxHeight = codeLines.length * 4.5 + 6
+          const boxHeight = codeLines.length * 4.2 + 6
           ensureSpace(boxHeight + 4)
 
-          doc.setFillColor(242, 244, 248)
+          doc.setFillColor(243, 245, 249)
           doc.setDrawColor(215, 222, 235)
           doc.setLineWidth(0.3)
           doc.roundedRect(18, currentY, contentWidth, boxHeight, 2, 2, 'FD')
 
           doc.setTextColor(40, 44, 52)
-          let codeY = currentY + 5
+          let codeY = currentY + 4.8
           for (const cL of codeLines) {
             doc.text(cL, 22, codeY)
-            codeY += 4.5
+            codeY += 4.2
           }
 
           currentY += boxHeight + 4
@@ -148,13 +148,13 @@ function renderMarkdownContent(
 
     const trimmed = rawLine.trim()
 
-    // Empty line -> small spacing
+    // 2. Empty line -> clean spacing
     if (!trimmed) {
-      currentY += 3
+      currentY += 2.5
       continue
     }
 
-    // Horizontal Rule
+    // 3. Horizontal Rule
     if (trimmed === '---' || trimmed === '***') {
       ensureSpace(6)
       doc.setDrawColor(220, 225, 235)
@@ -164,45 +164,156 @@ function renderMarkdownContent(
       continue
     }
 
-    // Heading 1 (#)
+    // 4. Structured Markdown Tables
+    if (trimmed.startsWith('|') && trimmed.endsWith('|') && trimmed.includes('|')) {
+      const tableLines: string[] = []
+      while (i < lines.length && lines[i].trim().startsWith('|') && lines[i].trim().endsWith('|')) {
+        tableLines.push(lines[i].trim())
+        i++
+      }
+      i-- // Rewind last increment from loop
+
+      const dataRows: string[][] = []
+      let colCount = 0
+
+      for (const tLine of tableLines) {
+        if (/^\|(\s*[-:]+[-|\s:]*)\|$/.test(tLine)) {
+          continue // Skip markdown divider row like |---|---|
+        }
+        const cells = tLine
+          .slice(1, -1)
+          .split('|')
+          .map((c) => c.trim().replace(/\*\*(.*?)\*\*/g, '$1'))
+        if (cells.length > colCount) colCount = cells.length
+        dataRows.push(cells)
+      }
+
+      if (dataRows.length > 0 && colCount > 0) {
+        const colWidth = contentWidth / colCount
+        const rowHeight = 7.5
+
+        dataRows.forEach((row, rowIdx) => {
+          ensureSpace(rowHeight + 2)
+
+          const isHeaderRow = rowIdx === 0
+          if (isHeaderRow) {
+            doc.setFillColor(238, 244, 255) // Clean blue-tint header
+            doc.rect(18, currentY, contentWidth, rowHeight, 'F')
+            doc.setFont('helvetica', 'bold')
+            doc.setFontSize(8.5)
+            doc.setTextColor(30, 64, 130)
+          } else {
+            if (rowIdx % 2 === 1) {
+              doc.setFillColor(250, 251, 254) // Subtle zebra row
+              doc.rect(18, currentY, contentWidth, rowHeight, 'F')
+            }
+            doc.setFont('helvetica', 'normal')
+            doc.setFontSize(8.5)
+            doc.setTextColor(45, 52, 65)
+          }
+
+          // Row bottom border
+          doc.setDrawColor(225, 230, 240)
+          doc.setLineWidth(0.2)
+          doc.line(18, currentY + rowHeight, 18 + contentWidth, currentY + rowHeight)
+
+          // Cell text
+          for (let c = 0; c < colCount; c++) {
+            const cellText = row[c] || ''
+            const cellX = 18 + c * colWidth + 2.5
+            const wrappedCell = doc.splitTextToSize(cellText, colWidth - 5)
+            doc.text(wrappedCell[0] || cellText, cellX, currentY + 5)
+          }
+
+          currentY += rowHeight
+        })
+
+        currentY += 4
+        continue
+      }
+    }
+
+    // 5. Blockquotes / Callout Blocks
+    if (trimmed.startsWith('> ') || trimmed === '>') {
+      const quoteLines: string[] = []
+      while (i < lines.length && (lines[i].trim().startsWith('> ') || lines[i].trim() === '>')) {
+        quoteLines.push(lines[i].trim().replace(/^>\s?/, ''))
+        i++
+      }
+      i--
+
+      const quoteText = quoteLines.join(' ').replace(/\*\*(.*?)\*\*/g, '$1')
+      doc.setFont('helvetica', 'italic')
+      doc.setFontSize(9)
+      const wrappedQuote = doc.splitTextToSize(quoteText, contentWidth - 14)
+      const qBoxHeight = wrappedQuote.length * 4.6 + 6
+      ensureSpace(qBoxHeight + 4)
+
+      // Shaded callout background
+      doc.setFillColor(247, 249, 253)
+      doc.setDrawColor(226, 232, 244)
+      doc.setLineWidth(0.3)
+      doc.roundedRect(18, currentY, contentWidth, qBoxHeight, 2, 2, 'FD')
+
+      // Left blue accent line
+      doc.setFillColor(66, 133, 244)
+      doc.rect(18, currentY, 2.5, qBoxHeight, 'F')
+
+      doc.setTextColor(55, 65, 81)
+      let qY = currentY + 4.8
+      for (const ql of wrappedQuote) {
+        doc.text(ql, 23, qY)
+        qY += 4.6
+      }
+      currentY += qBoxHeight + 4
+      continue
+    }
+
+    // 6. Heading 1 (#)
     if (trimmed.startsWith('# ')) {
-      ensureSpace(12)
+      ensureSpace(14)
+      currentY += 2
       doc.setFont('helvetica', 'bold')
       doc.setFontSize(13.5)
       doc.setTextColor(24, 28, 36)
-      const hText = trimmed.slice(2)
+      const hText = trimmed.slice(2).replace(/\*\*(.*?)\*\*/g, '$1')
       const hLines = doc.splitTextToSize(hText, contentWidth)
       for (const hl of hLines) {
         doc.text(hl, 18, currentY + 4)
         currentY += 6
       }
-      currentY += 2
+      // Accent underline
+      doc.setFillColor(66, 133, 244)
+      doc.rect(18, currentY + 1, 35, 1, 'F')
+      currentY += 4
       continue
     }
 
-    // Heading 2 (##)
+    // 7. Heading 2 (##)
     if (trimmed.startsWith('## ')) {
-      ensureSpace(10)
+      ensureSpace(11)
+      currentY += 1.5
       doc.setFont('helvetica', 'bold')
-      doc.setFontSize(12)
+      doc.setFontSize(11.5)
       doc.setTextColor(30, 35, 45)
-      const hText = trimmed.slice(3)
+      const hText = trimmed.slice(3).replace(/\*\*(.*?)\*\*/g, '$1')
       const hLines = doc.splitTextToSize(hText, contentWidth)
       for (const hl of hLines) {
-        doc.text(hl, 18, currentY + 3)
+        doc.text(hl, 18, currentY + 3.5)
         currentY += 5.5
       }
       currentY += 2
       continue
     }
 
-    // Heading 3 (###)
+    // 8. Heading 3 (###)
     if (trimmed.startsWith('### ')) {
       ensureSpace(9)
+      currentY += 1
       doc.setFont('helvetica', 'bold')
-      doc.setFontSize(11)
+      doc.setFontSize(10.5)
       doc.setTextColor(45, 52, 65)
-      const hText = trimmed.slice(4)
+      const hText = trimmed.slice(4).replace(/\*\*(.*?)\*\*/g, '$1')
       const hLines = doc.splitTextToSize(hText, contentWidth)
       for (const hl of hLines) {
         doc.text(hl, 18, currentY + 3)
@@ -212,41 +323,76 @@ function renderMarkdownContent(
       continue
     }
 
-    // Bullet points (- or *)
-    if (trimmed.startsWith('- ') || trimmed.startsWith('* ')) {
-      ensureSpace(6)
+    // 9. Numbered Lists (1. Step description)
+    const numListMatch = trimmed.match(/^(\d+)[\.\)]\s+(.*)/)
+    if (numListMatch) {
+      const numStr = numListMatch[1]
+      const listText = numListMatch[2].replace(/\*\*(.*?)\*\*/g, '$1')
       doc.setFont('helvetica', 'normal')
-      doc.setFontSize(10)
+      doc.setFontSize(9.5)
+      const numLines = doc.splitTextToSize(listText, contentWidth - 11)
+      ensureSpace(numLines.length * 4.8 + 2)
+
+      // Draw numbered badge
+      doc.setFillColor(235, 243, 255)
+      doc.roundedRect(18, currentY + 0.5, 6, 4.4, 1.2, 1.2, 'F')
+      doc.setFont('helvetica', 'bold')
+      doc.setFontSize(7.5)
+      doc.setTextColor(37, 99, 235)
+      doc.text(numStr, 21, currentY + 3.6, { align: 'center' })
+
+      // Text body
+      doc.setFont('helvetica', 'normal')
+      doc.setFontSize(9.5)
       doc.setTextColor(33, 37, 41)
-
-      const bText = trimmed.slice(2)
-      const bLines = doc.splitTextToSize(bText, contentWidth - 6)
-
-      // Draw small bullet dot
-      doc.setFillColor(66, 133, 244)
-      doc.circle(20, currentY + 1.2, 0.8, 'F')
-
-      for (const bl of bLines) {
-        doc.text(bl, 24, currentY + 2.5)
-        currentY += 5
+      let nY = currentY + 3.6
+      for (let ni = 0; ni < numLines.length; ni++) {
+        doc.text(numLines[ni], 26, nY)
+        nY += 4.8
       }
+      currentY += numLines.length * 4.8 + 1.5
       continue
     }
 
-    // Standard paragraph text
+    // 10. Bullet points (- or *)
+    if (trimmed.startsWith('- ') || trimmed.startsWith('* ')) {
+      const bText = trimmed.slice(2).replace(/\*\*(.*?)\*\*/g, '$1')
+      doc.setFont('helvetica', 'normal')
+      doc.setFontSize(9.5)
+      doc.setTextColor(33, 37, 41)
+
+      const bLines = doc.splitTextToSize(bText, contentWidth - 8)
+      ensureSpace(bLines.length * 4.8 + 2)
+
+      // Draw custom accent bullet dot
+      doc.setFillColor(66, 133, 244)
+      doc.circle(20, currentY + 2.5, 0.9, 'F')
+
+      let bY = currentY + 3.6
+      for (const bl of bLines) {
+        doc.text(bl, 24, bY)
+        bY += 4.8
+      }
+      currentY += bLines.length * 4.8 + 1.2
+      continue
+    }
+
+    // 11. Standard paragraph text
     doc.setFont('helvetica', 'normal')
-    doc.setFontSize(10)
+    doc.setFontSize(9.5)
     doc.setTextColor(33, 37, 41)
 
     // Clean inline bold markers if simple
     const cleanedText = rawLine.replace(/\*\*(.*?)\*\*/g, '$1')
     const pLines = doc.splitTextToSize(cleanedText, contentWidth)
-    ensureSpace(pLines.length * 5 + 1)
+    ensureSpace(pLines.length * 4.8 + 1)
 
+    let pY = currentY + 3.4
     for (const pl of pLines) {
-      doc.text(pl, 18, currentY + 2.5)
-      currentY += 5
+      doc.text(pl, 18, pY)
+      pY += 4.8
     }
+    currentY += pLines.length * 4.8 + 1.5
   }
 
   return currentY

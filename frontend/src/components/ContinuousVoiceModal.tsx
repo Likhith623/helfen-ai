@@ -158,13 +158,9 @@ export function ContinuousVoiceModal() {
             .then()
         }
 
-        // 4. Stream and speak response via Cartesia TTS
-        if (fullAiText.trim()) {
-          await playCartesiaTts(fullAiText)
-        } else {
-          setVoiceModeStatus('listening')
-          startListeningTurn()
-        }
+        // 4. Do not auto-speak solution; wait for user to press the speaker symbol
+        setVoiceModeStatus('listening')
+        startListeningTurn()
       } catch (err) {
         console.error('Voice loop error:', err)
         setVoiceAiTranscript('Sorry, I encountered an issue while generating a response.')
@@ -361,7 +357,7 @@ export function ContinuousVoiceModal() {
             status={voiceModeStatus}
             volumeLevel={voiceIsMuted ? 0 : voiceVolumeLevel}
             frequencyData={vadRef.current?.frequencyData}
-            size={300}
+            size={220}
           />
 
           {/* Status Label Pill */}
@@ -389,19 +385,38 @@ export function ContinuousVoiceModal() {
           {/* Live Captions Subtitles */}
           {showCaptions && (
             <div className="voice-captions-box">
-              {voiceModeStatus === 'speaking' && voiceAiTranscript && (
-                <p className="voice-caption-ai">
-                  <strong>Helfen:</strong> {voiceAiTranscript}
-                </p>
+              {voiceAiTranscript && (
+                <div className="voice-caption-ai-wrapper">
+                  <p className="voice-caption-ai">
+                    <strong>Helfen:</strong> {voiceAiTranscript}
+                  </p>
+                  <button
+                    type="button"
+                    className={`voice-listen-pill-btn ${voiceModeStatus === 'speaking' ? 'speaking' : ''}`}
+                    onClick={() => {
+                      if (voiceModeStatus === 'speaking') {
+                        stopAiSpeech()
+                        setVoiceModeStatus('listening')
+                        startListeningTurn()
+                      } else {
+                        playCartesiaTts(voiceAiTranscript)
+                      }
+                    }}
+                    title={voiceModeStatus === 'speaking' ? 'Stop voice playback' : 'Listen to solution'}
+                  >
+                    {voiceModeStatus === 'speaking' ? <VolumeX size={15} /> : <Volume2 size={15} />}
+                    <span>{voiceModeStatus === 'speaking' ? 'Stop speaking' : 'Listen to solution'}</span>
+                  </button>
+                </div>
               )}
-              {voiceModeStatus !== 'speaking' && voiceUserTranscript && (
+              {voiceUserTranscript && (
                 <p className="voice-caption-user">
                   <strong>You:</strong> {voiceUserTranscript}
                 </p>
               )}
               {!voiceUserTranscript && !voiceAiTranscript && (
                 <p className="voice-caption-placeholder">
-                  Speak naturally. Helfen will reply and listen automatically.
+                  Speak naturally. When Helfen replies, click the speaker symbol anytime to listen.
                 </p>
               )}
             </div>
@@ -420,21 +435,25 @@ export function ContinuousVoiceModal() {
             <MessageSquare size={20} />
           </button>
 
-          {/* Interrupt / Stop Speaking */}
-          {voiceModeStatus === 'speaking' && (
-            <button
-              type="button"
-              className="voice-action-circle interrupt"
-              onClick={() => {
+          {/* Speaker / Read Solution On-Demand */}
+          <button
+            type="button"
+            className={`voice-action-circle speaker ${voiceModeStatus === 'speaking' ? 'speaking active' : ''}`}
+            onClick={() => {
+              if (voiceModeStatus === 'speaking') {
                 stopAiSpeech()
                 setVoiceModeStatus('listening')
                 startListeningTurn()
-              }}
-              title="Interrupt and speak"
-            >
-              <RefreshCw size={20} />
-            </button>
-          )}
+              } else if (voiceAiTranscript) {
+                playCartesiaTts(voiceAiTranscript)
+              } else {
+                toast('No solution received yet to speak', { icon: 'ℹ️' })
+              }
+            }}
+            title={voiceModeStatus === 'speaking' ? 'Stop speaking' : 'Speak solution'}
+          >
+            {voiceModeStatus === 'speaking' ? <VolumeX size={20} /> : <Volume2 size={20} />}
+          </button>
 
           {/* Mute Mic Toggle */}
           <button

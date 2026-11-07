@@ -337,7 +337,24 @@ export function ChatInput() {
           }
         }
       } else {
-        useAppStore.getState().setIsTemporaryChat(true)
+        // Guest or local mode: create a normal local conversation. Temporary chat is ONLY on when user explicitly activates it.
+        const titleText = content || (currentAttachments.length > 0 ? `Analysis: ${currentAttachments[0].name}` : 'New Chat')
+        const title = titleText.slice(0, 40) + (titleText.length > 40 ? '…' : '')
+        const localConvId = crypto.randomUUID()
+        const localConv: any = {
+          id: localConvId,
+          user_id: 'local',
+          title,
+          model: selectedModel,
+          is_temporary: false,
+          is_archived: false,
+          is_pinned: false,
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString()
+        }
+        convId = localConvId
+        addConversation(localConv)
+        setActiveConversationId(localConvId)
       }
     }
 
