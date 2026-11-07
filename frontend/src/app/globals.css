@@ -562,7 +562,7 @@ input, textarea { font-family: inherit; }
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  padding: 0 24px 150px;
+  padding: 0 24px 200px; /* Generous bottom padding balances the search bar and lifts hero content into the optical center */
   position: relative;
   overflow-y: auto;
   overflow-x: hidden;
@@ -654,6 +654,16 @@ input, textarea { font-family: inherit; }
   z-index: 1;
   text-align: center;
   margin: auto 0;
+  transform: translateY(-24px); /* Elevated upward into the middle of the available canvas */
+}
+
+@media (max-height: 750px) {
+  .welcome-screen {
+    padding-bottom: 150px;
+  }
+  .welcome-hero-content {
+    transform: translateY(-10px);
+  }
 }
 
 /* Iridescent Badge */
