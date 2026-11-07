@@ -82,10 +82,6 @@ export function KnowledgeBaseModal() {
     <div
       className="kb-modal-backdrop"
       onClick={() => setIsKnowledgeBaseOpen(false)}
-      style={{
-        left: sidebarOpen ? '268px' : '0px',
-        transition: 'left 0.25s cubic-bezier(0.16, 1, 0.3, 1)'
-      }}
     >
       <div
         className="kb-modal-container"

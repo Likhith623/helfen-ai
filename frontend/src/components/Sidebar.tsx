@@ -177,18 +177,20 @@ export function Sidebar() {
               window.history.pushState({}, '', '/')
             }
           }}
-          style={{ cursor: 'pointer' }}
+          style={{ cursor: 'pointer', display: 'flex', alignItems: 'center' }}
           title="Helfen — Go to Home"
         >
           <img
             src="/logo-dark.png"
             alt="Helfen"
             className="helfen-logo-img helfen-logo-dark"
+            style={{ height: '24px', width: 'auto', maxHeight: '24px', maxWidth: '85px', objectFit: 'contain' }}
           />
           <img
             src="/logo-light.png"
             alt="Helfen"
             className="helfen-logo-img helfen-logo-light"
+            style={{ height: '24px', width: 'auto', maxHeight: '24px', maxWidth: '85px', objectFit: 'contain' }}
           />
         </div>
         <button

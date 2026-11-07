@@ -164,18 +164,20 @@ export default function Home() {
                       window.history.pushState({}, '', '/')
                     }
                   }}
-                  style={{ cursor: 'pointer', padding: '2px 4px' }}
+                  style={{ cursor: 'pointer', padding: '2px 4px', display: 'flex', alignItems: 'center' }}
                   title="Helfen — Go to Home"
                 >
                   <img
                     src="/logo-dark.png"
                     alt="Helfen"
                     className="helfen-logo-img helfen-logo-dark"
+                    style={{ height: '22px', width: 'auto', maxHeight: '22px', maxWidth: '80px', objectFit: 'contain' }}
                   />
                   <img
                     src="/logo-light.png"
                     alt="Helfen"
                     className="helfen-logo-img helfen-logo-light"
+                    style={{ height: '22px', width: 'auto', maxHeight: '22px', maxWidth: '80px', objectFit: 'contain' }}
                   />
                 </div>
               </div>
@@ -341,33 +343,6 @@ export default function Home() {
               <p className="welcome-subheading">
                 Helfen seamlessly retains conversational memory across sessions, grounds answers in your documents with hybrid RAG, and conducts real-time neural voice dialogue.
               </p>
-
-              {/* Context continuation banner / trigger */}
-              {continuationParentId ? (
-                <div
-                  className="welcome-continuation-banner"
-                  onClick={() => setIsContextModalOpen(true)}
-                  title="Click to view or switch context chat"
-                >
-                  <div className="welcome-continuation-pulse" />
-                  <div className="welcome-continuation-info">
-                    <span className="banner-tag">Context Active:</span>
-                    <strong className="banner-title">{continuationParentTitle || 'Previous Chat'}</strong>
-                    <span className="banner-action">• Click to change</span>
-                  </div>
-                </div>
-              ) : conversations.length > 0 ? (
-                <button
-                  type="button"
-                  className="welcome-continuation-banner unlinked"
-                  onClick={() => setIsContextModalOpen(true)}
-                  title="Choose an earlier chat to use as context for this new session"
-                >
-                  <Link2 size={15} className="text-blue" />
-                  <span>Link context from an earlier conversation</span>
-                  <span className="banner-pill-badge">{conversations.length} available</span>
-                </button>
-              ) : null}
 
               {/* Interactive Showcase Grid */}
               <div className="welcome-showcase-grid">

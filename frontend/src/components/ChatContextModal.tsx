@@ -98,10 +98,6 @@ export function ChatContextModal() {
     <div
       className="context-modal-backdrop"
       onClick={() => setIsContextModalOpen(false)}
-      style={{
-        left: sidebarOpen ? '268px' : '0px',
-        transition: 'left 0.25s cubic-bezier(0.16, 1, 0.3, 1)'
-      }}
     >
       <div
         className="kb-modal-container context-modal-container"
@@ -165,7 +161,6 @@ export function ChatContextModal() {
             <span
               className="kb-stat-num"
               style={{
-                color: continuationParentId ? '#34a853' : 'inherit',
                 fontSize: continuationParentId ? '15px' : '17px'
               }}
             >
@@ -187,7 +182,6 @@ export function ChatContextModal() {
         {continuationParentId && (
           <div className="context-modal-current" style={{ margin: '14px 22px 0' }}>
             <div className="context-modal-current-content">
-              <div className="context-modal-current-dot" />
               <div className="context-modal-current-text">
                 <span className="current-label">Currently Continuing From:</span>
                 <span className="current-title">
@@ -288,11 +282,6 @@ export function ChatContextModal() {
                     <div className="context-item-details">
                       <div className="context-item-title-row">
                         <span className="context-item-title">{conv.title}</span>
-                        {isSelected && (
-                          <span className="context-item-active-pill">
-                            <Check size={11} /> Linked Context
-                          </span>
-                        )}
                       </div>
                       <div className="context-item-meta">
                         <span className="meta-time">
@@ -329,12 +318,10 @@ export function ChatContextModal() {
           )}
         </div>
 
-        {/* Footer info */}
+        {/* Footer info (Single clean line) */}
         <div className="context-modal-footer">
-          <div className="footer-tip">
-            💡 <strong>Pro Tip:</strong> When a previous chat is linked as
-            context, Helfen recalls earlier decisions, instructions, and facts
-            without filling up the new chat’s history.
+          <div className="footer-tip-oneline">
+            💡 <strong>Pro Tip:</strong> When a previous chat is linked as context, Helfen recalls earlier decisions, instructions, and facts without filling up the new chat’s history.
           </div>
         </div>
       </div>
