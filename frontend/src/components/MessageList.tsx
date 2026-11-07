@@ -66,6 +66,11 @@ export function MessageList() {
 
   useEffect(() => {
     const handleMouseUp = (e: MouseEvent) => {
+      // Do not clear or reset selection when clicking inside any popup/card/modal
+      if ((e.target as Element)?.closest?.('.selection-popup, .note-popover-card, .inline-chat-popup, .selection-note-card, .image-lightbox-backdrop')) {
+        return
+      }
+
       const sel = window.getSelection()
       if (!sel || sel.isCollapsed || !sel.toString().trim()) {
         setSelection(null)
@@ -73,7 +78,7 @@ export function MessageList() {
       }
 
       const selectedText = sel.toString().trim()
-      if (selectedText.length < 3) return
+      if (selectedText.length < 2) return
 
       // Find which message was selected
       const range = sel.getRangeAt(0)
@@ -85,7 +90,6 @@ export function MessageList() {
       if (!messageId) return
 
       const rect = range.getBoundingClientRect()
-      const scrollY = window.scrollY || document.documentElement.scrollTop
 
       // Calculate offsets within the message
       const startOffset = getTextOffset(range.startContainer, range.startOffset, node as Element)
@@ -95,7 +99,7 @@ export function MessageList() {
         text: selectedText,
         range,
         x: rect.left + rect.width / 2,
-        y: rect.top + scrollY,
+        y: rect.top, // Viewport-relative coordinates for fixed positioning
         messageId,
         startOffset,
         endOffset,
@@ -135,19 +139,23 @@ export function MessageList() {
 
     useAppStore.getState().addAnnotation(selection.messageId, ann)
 
-    try {
-      supabase.from('inline_annotations').insert({
-        id: ann.id,
-        message_id: ann.message_id,
-        conversation_id: ann.conversation_id,
-        selected_text: ann.selected_text,
-        start_offset: ann.start_offset,
-        end_offset: ann.end_offset,
-        annotation_type: 'question',
-        is_resolved: false,
-      }).then()
-    } catch (err) {
-      console.error('Failed to save annotation to Supabase:', err)
+    const activeConvId = useAppStore.getState().activeConversationId || ''
+
+    if (activeConvId && activeConvId.length === 36) {
+      try {
+        supabase.from('inline_annotations').insert({
+          id: ann.id,
+          message_id: ann.message_id,
+          conversation_id: activeConvId,
+          selected_text: ann.selected_text,
+          start_offset: ann.start_offset,
+          end_offset: ann.end_offset,
+          annotation_type: 'question',
+          is_resolved: false,
+        }).then()
+      } catch (err) {
+        console.error('Failed to save annotation to Supabase:', err)
+      }
     }
 
     // Find element Y position for the annotation
@@ -182,21 +190,23 @@ export function MessageList() {
 
     useAppStore.getState().addAnnotation(messageId, newAnnotation)
 
-    try {
-      supabase.from('inline_annotations').insert({
-        id: newAnnotation.id,
-        message_id: newAnnotation.message_id,
-        conversation_id: newAnnotation.conversation_id,
-        selected_text: newAnnotation.selected_text,
-        start_offset: newAnnotation.start_offset,
-        end_offset: newAnnotation.end_offset,
-        annotation_type: 'note',
-        note: newAnnotation.note,
-        color: newAnnotation.color,
-        is_resolved: false,
-      }).then()
-    } catch (err) {
-      console.error('Failed to save note to Supabase:', err)
+    if (activeConvId && activeConvId.length === 36) {
+      try {
+        supabase.from('inline_annotations').insert({
+          id: newAnnotation.id,
+          message_id: newAnnotation.message_id,
+          conversation_id: activeConvId,
+          selected_text: newAnnotation.selected_text,
+          start_offset: newAnnotation.start_offset,
+          end_offset: newAnnotation.end_offset,
+          annotation_type: 'note',
+          note: newAnnotation.note,
+          color: newAnnotation.color,
+          is_resolved: false,
+        }).then()
+      } catch (err) {
+        console.error('Failed to save note to Supabase:', err)
+      }
     }
 
     setSelection(null)
@@ -384,24 +394,6 @@ export function MessageList() {
 
           return (
             <div key={msg.id} className={`message-wrapper ${msg.role} fade-in`}>
-              {msg.role === 'assistant' && (
-                <div className="message-header">
-                  <div className="message-avatar ai">
-                    <svg width="16" height="16" viewBox="0 0 28 28" fill="none">
-                      <path d="M14 3L25 9V19L14 25L3 19V9L14 3Z" fill="url(#grad)" />
-                      <defs>
-                        <linearGradient id="grad" x1="3" y1="3" x2="25" y2="25">
-                          <stop stopColor="#4285f4" />
-                          <stop offset="0.5" stopColor="#9c27b0" />
-                          <stop offset="1" stopColor="#fbbc05" />
-                        </linearGradient>
-                      </defs>
-                    </svg>
-                  </div>
-                  <span className="message-role-label">Helfen AI</span>
-                </div>
-              )}
-
               {msg.role === 'user' ? (
                 <div className="user-bubble" data-message-id={msg.id}>
                   {/* Attached files and images */}
@@ -560,17 +552,24 @@ export function MessageList() {
                   )}
 
                   {msg.id === streamingMessageId && isStreaming && !msg.content ? (
-                    <div className="streaming-dots">
-                      <span /><span /><span />
+                    <div className="claude-gemini-loader fade-in">
+                      <div className="streaming-dots">
+                        <span /><span /><span />
+                      </div>
                     </div>
                   ) : (
-                    <AnnotatedContent
-                      content={msg.content}
-                      messageId={msg.id}
-                      annotations={msgAnnotations}
-                      onAnnotationClick={openExistingAnnotation}
-                      onNoteClick={openExistingNote}
-                    />
+                    <>
+                      <AnnotatedContent
+                        content={msg.content}
+                        messageId={msg.id}
+                        annotations={msgAnnotations}
+                        onAnnotationClick={openExistingAnnotation}
+                        onNoteClick={openExistingNote}
+                      />
+                      {msg.id === streamingMessageId && isStreaming && (
+                        <span className="streaming-cursor" />
+                      )}
+                    </>
                   )}
 
                   {/* RAG Grounded Sources Citation Pill */}
