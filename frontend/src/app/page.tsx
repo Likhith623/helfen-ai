@@ -16,7 +16,7 @@ import { supabase, getConversationContextData } from '@/lib/supabase'
 import { resolveChatContextAndSummary } from '@/lib/chatContextService'
 import {
   Sun, Moon, Volume2, VolumeX, History,
-  Download, Edit, Sparkles, Menu, Link2, LogIn, FileText, Share2,
+  Download, Edit, Sparkles, ChevronRight, Link2, LogIn, FileText, Share2,
   BookOpen, Mic, Code2, X
 } from 'lucide-react'
 import { generateConversationPdf } from '@/lib/pdfGenerator'
@@ -140,16 +140,9 @@ export default function Home() {
         {/* ── TOP BAR ── */}
         <header className="topbar fade-in">
           <div className="topbar-left">
-            {/* Hamburger & Logo — visible when sidebar is collapsed */}
+            {/* Logo & Expand button — visible when sidebar is collapsed */}
             {!sidebarOpen && (
               <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                <button
-                  className="icon-btn"
-                  onClick={() => setSidebarOpen(true)}
-                  title="Open sidebar"
-                >
-                  <Menu size={20} />
-                </button>
                 <div
                   className="sidebar-brand"
                   onClick={() => {
@@ -180,6 +173,14 @@ export default function Home() {
                     style={{ height: '34px', width: 'auto', maxHeight: '36px', maxWidth: '115px', objectFit: 'contain' }}
                   />
                 </div>
+                <button
+                  className="icon-btn"
+                  onClick={() => setSidebarOpen(true)}
+                  title="Expand sidebar"
+                  aria-label="Expand sidebar"
+                >
+                  <ChevronRight size={18} />
+                </button>
               </div>
             )}
             {isTemporaryChat && (

@@ -127,7 +127,8 @@ input, textarea { font-family: inherit; }
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 14px 12px 8px;
+  padding: 16px 14px 10px;
+  margin-bottom: 12px;
   flex-shrink: 0;
 }
 .sidebar-brand {
@@ -238,8 +239,8 @@ input, textarea { font-family: inherit; }
 .sidebar-nav-group {
   display: flex;
   flex-direction: column;
-  gap: 1px;
-  padding: 0 8px;
+  gap: 2px;
+  padding: 0 10px;
   flex-shrink: 0;
 }
 .sidebar-nav-item {

@@ -5,7 +5,7 @@ import { useAppStore } from '@/store/appStore'
 import { supabase, getConversationContextData } from '@/lib/supabase'
 import { resolveChatContextAndSummary } from '@/lib/chatContextService'
 import {
-  Menu, Plus, MessageSquare, Search, Sparkles,
+  ChevronLeft, Plus, MessageSquare, Search, Sparkles,
   Image, Video, BookOpen, Timer, Settings,
   MoreHorizontal, Pin, Trash2, NotebookPen, Link2, LogIn, FileText, Share2
 } from 'lucide-react'
@@ -195,10 +195,11 @@ export function Sidebar() {
         </div>
         <button
           className="sidebar-icon-btn"
-          title="Close sidebar"
+          title="Collapse sidebar"
           onClick={() => setSidebarOpen(false)}
+          aria-label="Collapse sidebar"
         >
-          <Menu size={18} />
+          <ChevronLeft size={18} />
         </button>
       </div>
 
