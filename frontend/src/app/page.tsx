@@ -136,6 +136,10 @@ export default function Home() {
       <Sidebar />
 
       <main className="chat-area">
+        {/* Ambient luminous colorful aurora glow backdrops (active during both chat and welcome page) */}
+        <div className="chat-ambient-glow" />
+        <div className="chat-ambient-glow-secondary" />
+
         {/* ── TOP BAR ── */}
         <header className="topbar fade-in">
           <div className="topbar-left">
@@ -303,10 +307,6 @@ export default function Home() {
         {/* ── WELCOME / MESSAGES ── */}
         {isEmpty ? (
           <div className="welcome-screen fade-in">
-            {/* Ambient luminous glow backdrops */}
-            <div className="welcome-glow" />
-            <div className="welcome-glow-secondary" />
-
             <div className="welcome-hero-content">
               {/* Iridescent badge */}
               <div className="welcome-hero-badge">

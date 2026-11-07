@@ -518,6 +518,8 @@ input, textarea { font-family: inherit; }
   flex: 1;
   overflow-y: auto;
   scroll-behavior: smooth;
+  position: relative;
+  z-index: 1;
 }
 .messages-inner {
   max-width: 740px;
@@ -565,40 +567,78 @@ input, textarea { font-family: inherit; }
   overflow-x: hidden;
 }
 
-/* Dynamic ambient glow backdrops */
+/* Dynamic ambient colorful glow backdrops (active in both chat and welcome page) */
+.chat-ambient-glow,
 .welcome-glow {
   position: absolute;
-  top: 15%;
+  top: 8%;
   left: 50%;
   transform: translateX(-50%);
-  width: 900px;
-  height: 480px;
+  width: 1000px;
+  max-width: 95vw;
+  height: 520px;
   pointer-events: none;
   border-radius: 50%;
   z-index: 0;
   background:
-    radial-gradient(ellipse 45% 45% at 20% 30%, rgba(66, 133, 244, 0.22) 0%, transparent 70%),
-    radial-gradient(ellipse 45% 45% at 80% 30%, rgba(156, 39, 176, 0.20) 0%, transparent 70%),
-    radial-gradient(ellipse 50% 40% at 50% 65%, rgba(0, 210, 255, 0.15) 0%, transparent 70%),
-    radial-gradient(ellipse 40% 40% at 75% 75%, rgba(251, 188, 5, 0.12) 0%, transparent 70%);
-  filter: blur(60px);
-  animation: floatAmbient 12s ease-in-out infinite alternate;
+    radial-gradient(ellipse 45% 45% at 20% 30%, rgba(66, 133, 244, 0.24) 0%, transparent 70%),
+    radial-gradient(ellipse 45% 45% at 80% 30%, rgba(156, 39, 176, 0.22) 0%, transparent 70%),
+    radial-gradient(ellipse 50% 40% at 50% 65%, rgba(0, 210, 255, 0.18) 0%, transparent 70%),
+    radial-gradient(ellipse 40% 40% at 75% 75%, rgba(251, 188, 5, 0.15) 0%, transparent 70%);
+  filter: blur(65px);
+  animation: floatAmbient 14s ease-in-out infinite alternate;
 }
+
+.chat-ambient-glow-secondary,
 .welcome-glow-secondary {
   position: absolute;
-  bottom: 120px;
+  bottom: 80px;
   left: 50%;
   transform: translateX(-50%);
-  width: 720px;
-  height: 200px;
-  background: radial-gradient(ellipse 60% 50% at 50% 50%, rgba(66, 133, 244, 0.15) 0%, transparent 75%);
-  filter: blur(40px);
+  width: 820px;
+  max-width: 90vw;
+  height: 280px;
+  background:
+    radial-gradient(ellipse 50% 50% at 25% 50%, rgba(156, 39, 176, 0.18) 0%, transparent 70%),
+    radial-gradient(ellipse 50% 50% at 75% 50%, rgba(66, 133, 244, 0.20) 0%, transparent 75%),
+    radial-gradient(ellipse 40% 40% at 50% 50%, rgba(0, 210, 255, 0.14) 0%, transparent 70%);
+  filter: blur(55px);
   pointer-events: none;
   z-index: 0;
+  animation: floatAmbientSlow 18s ease-in-out infinite alternate-reverse;
 }
+
 @keyframes floatAmbient {
   0% { transform: translateX(-50%) translateY(0) scale(1); }
   100% { transform: translateX(-48%) translateY(-20px) scale(1.05); }
+}
+
+@keyframes floatAmbientSlow {
+  0% { transform: translateX(-50%) translateY(0) scale(1); }
+  100% { transform: translateX(-52%) translateY(16px) scale(1.08); }
+}
+
+/* Light mode colorful glow for chat and hero */
+.light .chat-ambient-glow,
+.light .welcome-glow,
+[data-theme='light'] .chat-ambient-glow,
+[data-theme='light'] .welcome-glow {
+  background:
+    radial-gradient(ellipse 45% 45% at 20% 30%, rgba(66, 133, 244, 0.22) 0%, transparent 70%),
+    radial-gradient(ellipse 45% 45% at 80% 30%, rgba(156, 39, 176, 0.20) 0%, transparent 70%),
+    radial-gradient(ellipse 50% 40% at 50% 65%, rgba(0, 210, 255, 0.18) 0%, transparent 70%),
+    radial-gradient(ellipse 40% 40% at 75% 75%, rgba(251, 188, 5, 0.18) 0%, transparent 70%);
+  filter: blur(65px);
+}
+
+.light .chat-ambient-glow-secondary,
+.light .welcome-glow-secondary,
+[data-theme='light'] .chat-ambient-glow-secondary,
+[data-theme='light'] .welcome-glow-secondary {
+  background:
+    radial-gradient(ellipse 50% 50% at 25% 50%, rgba(156, 39, 176, 0.16) 0%, transparent 70%),
+    radial-gradient(ellipse 50% 50% at 75% 50%, rgba(66, 133, 244, 0.18) 0%, transparent 75%);
+  filter: blur(55px);
 }
 
 .welcome-hero-content {
@@ -870,8 +910,14 @@ input, textarea { font-family: inherit; }
   right: 0;
   padding: 16px 24px 20px;
   z-index: 5;
-  /* subtle gradient fade from bg */
-  background: linear-gradient(to top, var(--bg-main) 70%, transparent 100%);
+  /* frosted glass gradient allowing colorful background glows to shine through */
+  background: linear-gradient(to top, rgba(13, 15, 17, 0.88) 60%, transparent 100%);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+}
+.light .input-area,
+[data-theme='light'] .input-area {
+  background: linear-gradient(to top, rgba(248, 249, 250, 0.88) 60%, transparent 100%);
 }
 .input-area-inner {
   max-width: 680px;
