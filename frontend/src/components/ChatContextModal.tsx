@@ -104,40 +104,88 @@ export function ChatContextModal() {
       }}
     >
       <div
-        className="context-modal-container glass-modal"
+        className="kb-modal-container context-modal-container"
         onClick={(e) => e.stopPropagation()}
         role="dialog"
         aria-modal="true"
         aria-labelledby="context-modal-title"
       >
-        {/* Header (Centered, Clean & World-Class) */}
-        <div className="context-modal-header">
+        {/* Header (Matching RAG Knowledge Base Design & Layout) */}
+        <div className="kb-modal-header">
+          <div className="kb-modal-header-left">
+            <div
+              className="kb-modal-icon-badge"
+              style={{
+                background: 'linear-gradient(135deg, rgba(66, 133, 244, 0.2), rgba(156, 39, 176, 0.2))',
+                borderColor: 'rgba(66, 133, 244, 0.35)',
+                color: 'var(--blue)'
+              }}
+            >
+              <Sparkles size={18} />
+            </div>
+            <div>
+              <div className="kb-modal-title-row">
+                <span id="context-modal-title" className="kb-modal-title">
+                  Conversation Continuation
+                </span>
+                <button
+                  type="button"
+                  className={`kb-rag-toggle ${continuationParentId ? 'active' : ''}`}
+                  style={{ cursor: continuationParentId ? 'pointer' : 'default' }}
+                  onClick={continuationParentId ? handleClear : undefined}
+                  title={continuationParentId ? 'Click to clear linked context' : 'Context linking ready'}
+                >
+                  <span className="kb-toggle-dot" />
+                  <span>{continuationParentId ? 'Context Linked' : 'Multi-Turn Ready'}</span>
+                </button>
+              </div>
+              <p className="kb-modal-subtitle">
+                Select an earlier conversation to seamlessly carry forward its full context, memory, and decisions
+              </p>
+            </div>
+          </div>
+
           <button
             type="button"
-            className="context-modal-close-btn"
+            className="icon-btn"
             onClick={() => setIsContextModalOpen(false)}
-            title="Close"
+            title="Close Continuation Modal"
           >
             <X size={18} />
           </button>
+        </div>
 
-          <div className="context-modal-header-center">
-            <div className="context-modal-icon-badge">
-              <Sparkles size={20} className="sparkle-icon" />
-            </div>
-            <h2 id="context-modal-title" className="context-modal-title">
-              Conversation Continuation
-            </h2>
-            <p className="context-modal-subtitle">
-              Choose an existing chat so its full memory, details, and discussion
-              seamlessly carry over into this new chat.
-            </p>
+        {/* Stats Row (Matching RAG Modal 4-Card Summary Grid) */}
+        <div className="kb-stats-row">
+          <div className="kb-stat-box">
+            <span className="kb-stat-num">{conversations.filter(c => !c.is_archived).length}</span>
+            <span className="kb-stat-label">Saved Chats</span>
+          </div>
+          <div className="kb-stat-box">
+            <span
+              className="kb-stat-num"
+              style={{
+                color: continuationParentId ? '#34a853' : 'inherit',
+                fontSize: continuationParentId ? '15px' : '17px'
+              }}
+            >
+              {continuationParentId ? 'Linked' : 'None'}
+            </span>
+            <span className="kb-stat-label">Active Context</span>
+          </div>
+          <div className="kb-stat-box">
+            <span className="kb-stat-num" style={{ fontSize: '15px' }}>Full Thread</span>
+            <span className="kb-stat-label">Transfer Scope</span>
+          </div>
+          <div className="kb-stat-box">
+            <span className="kb-stat-num" style={{ fontSize: '15px' }}>Deep Recall</span>
+            <span className="kb-stat-label">Memory Mode</span>
           </div>
         </div>
 
         {/* Current Active Context Indicator */}
         {continuationParentId && (
-          <div className="context-modal-current">
+          <div className="context-modal-current" style={{ margin: '14px 22px 0' }}>
             <div className="context-modal-current-content">
               <div className="context-modal-current-dot" />
               <div className="context-modal-current-text">
@@ -149,6 +197,7 @@ export function ChatContextModal() {
               </div>
             </div>
             <button
+              type="button"
               className="context-modal-unlink-btn"
               onClick={handleClear}
               title="Remove linked context"
@@ -160,7 +209,10 @@ export function ChatContextModal() {
         )}
 
         {/* Search Bar */}
-        <div className="context-modal-search">
+        <div
+          className="context-modal-search"
+          style={{ margin: continuationParentId ? '12px 22px' : '16px 22px 12px' }}
+        >
           <Search size={16} className="search-icon" />
           <input
             ref={inputRef}
@@ -172,16 +224,27 @@ export function ChatContextModal() {
           />
           {searchQuery && (
             <button
+              type="button"
               className="search-clear-btn"
               onClick={() => setSearchQuery('')}
+              title="Clear search"
             >
               <X size={14} />
             </button>
           )}
         </div>
 
+        {/* Section Heading */}
+        <div style={{ padding: '0 22px 8px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+          <span className="kb-section-heading">
+            {searchQuery
+              ? `Search Results (${filteredConversations.length})`
+              : `Available Conversations (${filteredConversations.length})`}
+          </span>
+        </div>
+
         {/* Chat List */}
-        <div className="context-modal-list">
+        <div className="context-modal-list" style={{ padding: '0 22px 14px' }}>
           {filteredConversations.length === 0 ? (
             <div className="context-modal-empty">
               <MessageSquare size={32} style={{ opacity: 0.3 }} />

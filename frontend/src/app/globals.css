@@ -2351,51 +2351,55 @@ input, textarea { font-family: inherit; }
 .react-hot-toast { font-family: var(--font) !important; }
 
 /* ===== CHAT CONTEXT CONTINUATION & MODAL ===== */
-.context-modal-backdrop {
+.context-modal-backdrop,
+.kb-modal-backdrop {
   position: fixed;
   inset: 0;
-  background: rgba(0, 0, 0, 0.65);
+  background: rgba(0, 0, 0, 0.7);
   backdrop-filter: blur(8px);
   -webkit-backdrop-filter: blur(8px);
   z-index: 9999;
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   justify-content: center;
-  padding: 16px;
+  padding: 64px 20px 32px;
+  overflow-y: auto;
   animation: fadeIn 0.2s var(--ease) both;
 }
 
-.context-modal-container {
+.context-modal-container,
+.kb-modal-container {
   width: 100%;
-  max-width: 780px; /* Spacious, neat, and beautifully proportioned! */
-  min-height: 480px;
-  max-height: 85vh;
-  /* Soft ambient background colors matching the chat background */
+  max-width: 780px; /* Spacious, neat, and beautifully proportioned */
+  max-height: 88vh;
+  /* Ambient background colors matching the chat background */
   background:
-    radial-gradient(ellipse 70% 50% at 20% 15%, rgba(66, 133, 244, 0.14) 0%, transparent 70%),
-    radial-gradient(ellipse 60% 50% at 80% 25%, rgba(156, 39, 176, 0.12) 0%, transparent 70%),
+    radial-gradient(ellipse 70% 50% at 20% 15%, rgba(66, 133, 244, 0.12) 0%, transparent 70%),
+    radial-gradient(ellipse 60% 50% at 80% 25%, rgba(156, 39, 176, 0.10) 0%, transparent 70%),
     radial-gradient(ellipse 50% 40% at 50% 80%, rgba(0, 210, 255, 0.08) 0%, transparent 70%),
     radial-gradient(ellipse 40% 40% at 85% 85%, rgba(251, 188, 5, 0.06) 0%, transparent 70%),
     var(--bg-card);
   border: 1px solid var(--border-strong);
   border-radius: var(--radius-xl);
-  box-shadow: 0 24px 60px rgba(0, 0, 0, 0.6), 0 0 0 1px rgba(255, 255, 255, 0.08);
+  box-shadow: 0 24px 64px rgba(0, 0, 0, 0.65), 0 0 0 1px rgba(255, 255, 255, 0.08);
   display: flex;
   flex-direction: column;
   overflow: hidden;
   position: relative;
-  animation: popIn 0.25s cubic-bezier(0.16, 1, 0.3, 1) both;
+  animation: popIn 0.22s cubic-bezier(0.16, 1, 0.3, 1) both;
 }
 
 [data-theme='light'] .context-modal-container,
-.light .context-modal-container {
+.light .context-modal-container,
+[data-theme='light'] .kb-modal-container,
+.light .kb-modal-container {
   background:
     radial-gradient(ellipse 70% 50% at 20% 15%, rgba(66, 133, 244, 0.10) 0%, transparent 70%),
     radial-gradient(ellipse 60% 50% at 80% 25%, rgba(156, 39, 176, 0.08) 0%, transparent 70%),
     radial-gradient(ellipse 50% 40% at 50% 80%, rgba(0, 210, 255, 0.06) 0%, transparent 70%),
     #ffffff !important;
   border: 1px solid rgba(0, 0, 0, 0.1) !important;
-  box-shadow: 0 24px 60px rgba(0, 0, 0, 0.12), 0 4px 16px rgba(66, 133, 244, 0.06) !important;
+  box-shadow: 0 24px 64px rgba(0, 0, 0, 0.12), 0 4px 16px rgba(66, 133, 244, 0.06) !important;
 }
 
 .context-modal-header {
@@ -2817,6 +2821,73 @@ input, textarea { font-family: inherit; }
 }
 .footer-tip strong {
   color: var(--text-primary);
+}
+
+/* Light Theme Enhancements for Conversation Continuation Modal */
+[data-theme='light'] .context-modal-search,
+.light .context-modal-search {
+  background: #ffffff !important;
+  border: 1px solid rgba(0, 0, 0, 0.14) !important;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.04) !important;
+}
+
+[data-theme='light'] .context-modal-search-input,
+.light .context-modal-search-input {
+  color: #090a0f !important;
+}
+
+[data-theme='light'] .context-modal-search-input::placeholder,
+.light .context-modal-search-input::placeholder {
+  color: #64748b !important;
+}
+
+[data-theme='light'] .context-item-title,
+.light .context-item-title {
+  color: #090a0f !important;
+  font-weight: 700 !important;
+}
+
+[data-theme='light'] .context-item-meta,
+.light .context-item-meta {
+  color: #475569 !important;
+}
+
+[data-theme='light'] .meta-model,
+.light .meta-model {
+  background: #ffffff !important;
+  border: 1px solid rgba(0, 0, 0, 0.12) !important;
+  color: #1e293b !important;
+  font-weight: 500 !important;
+}
+
+[data-theme='light'] .context-item-action-btn,
+.light .context-item-action-btn {
+  background: #ffffff !important;
+  border: 1px solid rgba(0, 0, 0, 0.15) !important;
+  color: #090a0f !important;
+}
+
+[data-theme='light'] .context-item-action-btn:hover,
+.light .context-item-action-btn:hover {
+  background: var(--blue) !important;
+  border-color: var(--blue) !important;
+  color: #ffffff !important;
+}
+
+[data-theme='light'] .context-modal-footer,
+.light .context-modal-footer {
+  background: rgba(0, 0, 0, 0.02) !important;
+  border-top: 1px solid rgba(0, 0, 0, 0.08) !important;
+}
+
+[data-theme='light'] .footer-tip,
+.light .footer-tip {
+  color: #475569 !important;
+}
+
+[data-theme='light'] .footer-tip strong,
+.light .footer-tip strong {
+  color: #090a0f !important;
 }
 
 /* ===== INPUT AREA CONTEXT PILL & BUTTONS ===== */
@@ -5072,9 +5143,10 @@ input, textarea { font-family: inherit; }
   -webkit-backdrop-filter: blur(8px);
   z-index: 9999;
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   justify-content: center;
-  padding: 16px;
+  padding: 64px 20px 32px;
+  overflow-y: auto;
   animation: fadeIn 0.2s var(--ease) both;
 }
 
