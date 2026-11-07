@@ -236,8 +236,8 @@ export function ChatContextModal() {
           </span>
         </div>
 
-        {/* Chat List */}
-        <div className="context-modal-list" style={{ padding: '0 22px 14px' }}>
+        {/* Chat List (At most 3 chats visible, scroll down for more) */}
+        <div className="context-modal-list">
           {filteredConversations.length === 0 ? (
             <div className="context-modal-empty">
               <MessageSquare size={32} style={{ opacity: 0.3 }} />

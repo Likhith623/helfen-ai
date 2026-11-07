@@ -68,12 +68,15 @@ export function ChatInput() {
     isContinuousVoiceActive, startContinuousVoice, stopContinuousVoice
   } = useAppStore()
 
-  /* Auto-resize textarea */
+  /* Auto-resize textarea up to 3 lines (max 72px), then scroll */
   useEffect(() => {
     const el = textareaRef.current
     if (!el) return
     el.style.height = '24px'
-    el.style.height = `${Math.min(el.scrollHeight, 200)}px`
+    const maxH = 72 // Exactly 3 lines (24px * 3)
+    const newHeight = Math.min(el.scrollHeight, maxH)
+    el.style.height = `${newHeight}px`
+    el.style.overflowY = el.scrollHeight > maxH ? 'auto' : 'hidden'
   }, [input])
 
   /* Load custom prompt templates on mount */
@@ -197,7 +200,10 @@ export function ChatInput() {
     const currentAttachments = [...pendingAttachments]
     clearPendingAttachments()
     setInput('')
-    if (textareaRef.current) textareaRef.current.style.height = '24px'
+    if (textareaRef.current) {
+      textareaRef.current.style.height = '24px'
+      textareaRef.current.style.overflowY = 'hidden'
+    }
 
     const { formattedContext: docsContext, images: extractedImages } =
       formatAttachmentsContext(currentAttachments)
