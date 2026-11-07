@@ -18,7 +18,8 @@ export function ChatContextModal() {
     conversations,
     continuationParentId,
     setContinuationParent,
-    clearContinuationParent
+    clearContinuationParent,
+    sidebarOpen
   } = useAppStore()
 
   const [searchQuery, setSearchQuery] = useState('')
@@ -97,6 +98,10 @@ export function ChatContextModal() {
     <div
       className="context-modal-backdrop"
       onClick={() => setIsContextModalOpen(false)}
+      style={{
+        left: sidebarOpen ? '268px' : '0px',
+        transition: 'left 0.25s cubic-bezier(0.16, 1, 0.3, 1)'
+      }}
     >
       <div
         className="context-modal-container glass-modal"
@@ -105,28 +110,29 @@ export function ChatContextModal() {
         aria-modal="true"
         aria-labelledby="context-modal-title"
       >
-        {/* Header */}
+        {/* Header (Centered, Clean & World-Class) */}
         <div className="context-modal-header">
-          <div className="context-modal-header-info">
-            <div className="context-modal-badge">
-              <Sparkles size={13} className="sparkle-icon" />
-              <span>Conversation Continuation</span>
-            </div>
-            <h2 id="context-modal-title" className="context-modal-title">
-              Select Context Chat
-            </h2>
-            <p className="context-modal-subtitle">
-              Choose an existing chat so its full memory, details, and discussion
-              seamlessly carry over into this new chat.
-            </p>
-          </div>
           <button
+            type="button"
             className="context-modal-close-btn"
             onClick={() => setIsContextModalOpen(false)}
             title="Close"
           >
             <X size={18} />
           </button>
+
+          <div className="context-modal-header-center">
+            <div className="context-modal-icon-badge">
+              <Sparkles size={20} className="sparkle-icon" />
+            </div>
+            <h2 id="context-modal-title" className="context-modal-title">
+              Conversation Continuation
+            </h2>
+            <p className="context-modal-subtitle">
+              Choose an existing chat so its full memory, details, and discussion
+              seamlessly carry over into this new chat.
+            </p>
+          </div>
         </div>
 
         {/* Current Active Context Indicator */}

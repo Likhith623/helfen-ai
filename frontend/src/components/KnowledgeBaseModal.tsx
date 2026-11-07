@@ -14,7 +14,8 @@ export function KnowledgeBaseModal() {
   const {
     isKnowledgeBaseOpen, setIsKnowledgeBaseOpen,
     knowledgeDocuments, addKnowledgeDocument, removeKnowledgeDocument, clearKnowledgeBase,
-    ragModeEnabled, toggleRagMode
+    ragModeEnabled, toggleRagMode,
+    sidebarOpen
   } = useAppStore()
 
   const [testQuery, setTestQuery] = useState('')
@@ -78,7 +79,14 @@ export function KnowledgeBaseModal() {
   }
 
   return (
-    <div className="kb-modal-backdrop" onClick={() => setIsKnowledgeBaseOpen(false)}>
+    <div
+      className="kb-modal-backdrop"
+      onClick={() => setIsKnowledgeBaseOpen(false)}
+      style={{
+        left: sidebarOpen ? '268px' : '0px',
+        transition: 'left 0.25s cubic-bezier(0.16, 1, 0.3, 1)'
+      }}
+    >
       <div
         className="kb-modal-container"
         onClick={(e) => e.stopPropagation()}
