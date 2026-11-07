@@ -22,11 +22,7 @@ import {
 import { generateConversationPdf } from '@/lib/pdfGenerator'
 import toast from 'react-hot-toast'
 
-const SUGGESTIONS = [
-  { icon: '✏️', label: 'Design a book cover for my life story' },
-  { icon: '🌿', label: 'Explain how photosynthesis works' },
-  { icon: '🪑', label: 'Restore an old wooden table' },
-]
+
 
 export default function Home() {
   const {
@@ -439,26 +435,7 @@ export default function Home() {
                 </div>
               </div>
 
-              {/* Quick suggestion chips */}
-              <div className="welcome-suggestions-row">
-                {SUGGESTIONS.map((s, i) => (
-                  <button
-                    key={i}
-                    className="suggestion-chip-premium"
-                    onClick={() => {
-                      const ta = document.querySelector<HTMLTextAreaElement>('.chat-textarea')
-                      if (ta) {
-                        ta.value = s.label
-                        ta.dispatchEvent(new Event('input', { bubbles: true }))
-                        ta.focus()
-                      }
-                    }}
-                  >
-                    <span className="suggestion-chip-emoji">{s.icon}</span>
-                    <span className="suggestion-chip-text">{s.label}</span>
-                  </button>
-                ))}
-              </div>
+
             </div>
           </div>
         ) : (
