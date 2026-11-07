@@ -322,12 +322,6 @@ export default function Home() {
         {isEmpty ? (
           <div className="welcome-screen fade-in">
             <div className="welcome-hero-content">
-              {/* Iridescent badge */}
-              <div className="welcome-hero-badge">
-                <Sparkles size={14} className="sparkle-gemini" />
-                <span>Context-Aware Multi-Modal Intelligence</span>
-              </div>
-
               <h1 className="welcome-heading">
                 What would you like to <span className="text-gradient-aurora">explore</span> or <span className="text-gradient-cyan">continue</span>?
               </h1>

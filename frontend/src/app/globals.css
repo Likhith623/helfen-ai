@@ -561,11 +561,12 @@ input, textarea { font-family: inherit; }
   display: flex;
   flex-direction: column;
   align-items: center;
-  justify-content: flex-start;
-  padding: 30px 24px 140px;
+  justify-content: center;
+  padding: 24px 24px 130px;
   position: relative;
   overflow-y: auto;
   overflow-x: hidden;
+  min-height: 100%;
 }
 
 /* Dynamic ambient colorful glow backdrops (active in both chat and welcome page) */
@@ -648,10 +649,11 @@ input, textarea { font-family: inherit; }
   display: flex;
   flex-direction: column;
   align-items: center;
+  justify-content: center;
   position: relative;
   z-index: 1;
   text-align: center;
-  margin-top: 10px;
+  margin: auto 0;
 }
 
 /* Iridescent Badge */
