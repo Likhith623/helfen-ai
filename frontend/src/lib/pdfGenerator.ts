@@ -8,46 +8,41 @@ export interface PdfExportOptions {
 }
 
 /**
- * Draws professional Helfen AI header and branding banner
+ * Draws professional Helfen AI centered header and branding banner
  */
 function drawHeader(doc: jsPDF, title: string, model: string, dateStr: string): number {
   const pageWidth = doc.internal.pageSize.getWidth()
+  const centerX = pageWidth / 2
 
-  // Top color accent bar (Gemini-inspired blue)
-  doc.setFillColor(66, 133, 244)
-  doc.rect(0, 0, pageWidth, 5, 'F')
+  // Top color accent bar (subtle 2.5mm modern blue gradient bar)
+  doc.setFillColor(37, 99, 235)
+  doc.rect(0, 0, pageWidth, 2.5, 'F')
 
-  // Brand Name
+  // Website Name - Centered in middle top
   doc.setFont('helvetica', 'bold')
-  doc.setFontSize(16)
-  doc.setTextColor(24, 28, 36)
-  doc.text('Helfen.AI', 18, 16)
+  doc.setFontSize(18)
+  doc.setTextColor(15, 23, 42) // #0f172a
+  doc.text('Helfen.AI', centerX, 15, { align: 'center' })
 
-  // Sub-badge
+  // Name of Chat - Centered below website name in small size
   doc.setFont('helvetica', 'normal')
-  doc.setFontSize(9)
-  doc.setTextColor(100, 105, 115)
-  doc.text('INTELLIGENT ASSISTANT RESPONSE', 50, 16)
+  doc.setFontSize(10)
+  doc.setTextColor(100, 116, 139) // #64748b
+  const cleanTitle = title.length > 70 ? title.slice(0, 70) + '...' : title
+  doc.text(cleanTitle, centerX, 21.5, { align: 'center' })
 
-  // Title
-  doc.setFont('helvetica', 'bold')
-  doc.setFontSize(14)
-  doc.setTextColor(30, 35, 45)
-  const cleanTitle = title.length > 60 ? title.slice(0, 60) + '...' : title
-  doc.text(cleanTitle, 18, 25)
-
-  // Metadata row
+  // Metadata row - Centered below chat name
   doc.setFont('helvetica', 'normal')
-  doc.setFontSize(9)
-  doc.setTextColor(115, 120, 130)
-  doc.text(`Model: ${model}   |   Exported: ${dateStr}`, 18, 31)
+  doc.setFontSize(8)
+  doc.setTextColor(148, 163, 184) // #94a3b8
+  doc.text(`${model}   •   ${dateStr}`, centerX, 26.5, { align: 'center' })
 
   // Subtle dividing line
-  doc.setDrawColor(220, 225, 235)
-  doc.setLineWidth(0.5)
-  doc.line(18, 35, pageWidth - 18, 35)
+  doc.setDrawColor(226, 232, 240) // #e2e8f0
+  doc.setLineWidth(0.35)
+  doc.line(20, 31, pageWidth - 20, 31)
 
-  return 42 // Next Y position
+  return 38 // Next Y position for body content
 }
 
 /**
@@ -60,15 +55,15 @@ function drawFooters(doc: jsPDF): void {
 
   for (let i = 1; i <= pageCount; i++) {
     doc.setPage(i)
-    doc.setDrawColor(230, 235, 245)
-    doc.setLineWidth(0.4)
-    doc.line(18, pageHeight - 12, pageWidth - 18, pageHeight - 12)
+    doc.setDrawColor(226, 232, 240)
+    doc.setLineWidth(0.3)
+    doc.line(20, pageHeight - 12, pageWidth - 20, pageHeight - 12)
 
     doc.setFont('helvetica', 'normal')
     doc.setFontSize(8)
-    doc.setTextColor(140, 145, 155)
-    doc.text('Generated with Helfen.AI • Next-Gen Contextual Assistant', 18, pageHeight - 7)
-    doc.text(`Page ${i} of ${pageCount}`, pageWidth - 18, pageHeight - 7, { align: 'right' })
+    doc.setTextColor(148, 163, 184)
+    doc.text('Helfen.AI • Intelligent Contextual Assistant', 20, pageHeight - 7)
+    doc.text(`Page ${i} of ${pageCount}`, pageWidth - 20, pageHeight - 7, { align: 'right' })
   }
 }
 
@@ -83,13 +78,14 @@ function renderMarkdownContent(
   maxY: number
 ): number {
   const pageWidth = doc.internal.pageSize.getWidth()
+  const marginX = 20
   let currentY = startY
 
   const ensureSpace = (neededHeight: number) => {
     if (currentY + neededHeight > maxY) {
       doc.addPage()
-      doc.setFillColor(66, 133, 244)
-      doc.rect(0, 0, pageWidth, 3, 'F')
+      doc.setFillColor(37, 99, 235)
+      doc.rect(0, 0, pageWidth, 2.5, 'F')
       currentY = 20
     }
   }
@@ -121,12 +117,12 @@ function renderMarkdownContent(
           doc.setFillColor(243, 245, 249)
           doc.setDrawColor(215, 222, 235)
           doc.setLineWidth(0.3)
-          doc.roundedRect(18, currentY, contentWidth, boxHeight, 2, 2, 'FD')
+          doc.roundedRect(marginX, currentY, contentWidth, boxHeight, 2, 2, 'FD')
 
           doc.setTextColor(40, 44, 52)
           let codeY = currentY + 4.8
           for (const cL of codeLines) {
-            doc.text(cL, 22, codeY)
+            doc.text(cL, marginX + 4, codeY)
             codeY += 4.2
           }
 
@@ -157,9 +153,9 @@ function renderMarkdownContent(
     // 3. Horizontal Rule
     if (trimmed === '---' || trimmed === '***') {
       ensureSpace(6)
-      doc.setDrawColor(220, 225, 235)
+      doc.setDrawColor(226, 232, 240)
       doc.setLineWidth(0.4)
-      doc.line(18, currentY + 2, 18 + contentWidth, currentY + 2)
+      doc.line(marginX, currentY + 2, marginX + contentWidth, currentY + 2)
       currentY += 6
       continue
     }
@@ -198,14 +194,14 @@ function renderMarkdownContent(
           const isHeaderRow = rowIdx === 0
           if (isHeaderRow) {
             doc.setFillColor(238, 244, 255) // Clean blue-tint header
-            doc.rect(18, currentY, contentWidth, rowHeight, 'F')
+            doc.rect(marginX, currentY, contentWidth, rowHeight, 'F')
             doc.setFont('helvetica', 'bold')
             doc.setFontSize(8.5)
             doc.setTextColor(30, 64, 130)
           } else {
             if (rowIdx % 2 === 1) {
               doc.setFillColor(250, 251, 254) // Subtle zebra row
-              doc.rect(18, currentY, contentWidth, rowHeight, 'F')
+              doc.rect(marginX, currentY, contentWidth, rowHeight, 'F')
             }
             doc.setFont('helvetica', 'normal')
             doc.setFontSize(8.5)
@@ -213,14 +209,14 @@ function renderMarkdownContent(
           }
 
           // Row bottom border
-          doc.setDrawColor(225, 230, 240)
+          doc.setDrawColor(226, 232, 240)
           doc.setLineWidth(0.2)
-          doc.line(18, currentY + rowHeight, 18 + contentWidth, currentY + rowHeight)
+          doc.line(marginX, currentY + rowHeight, marginX + contentWidth, currentY + rowHeight)
 
           // Cell text
           for (let c = 0; c < colCount; c++) {
             const cellText = row[c] || ''
-            const cellX = 18 + c * colWidth + 2.5
+            const cellX = marginX + c * colWidth + 2.5
             const wrappedCell = doc.splitTextToSize(cellText, colWidth - 5)
             doc.text(wrappedCell[0] || cellText, cellX, currentY + 5)
           }
@@ -250,19 +246,19 @@ function renderMarkdownContent(
       ensureSpace(qBoxHeight + 4)
 
       // Shaded callout background
-      doc.setFillColor(247, 249, 253)
-      doc.setDrawColor(226, 232, 244)
+      doc.setFillColor(248, 250, 252)
+      doc.setDrawColor(226, 232, 240)
       doc.setLineWidth(0.3)
-      doc.roundedRect(18, currentY, contentWidth, qBoxHeight, 2, 2, 'FD')
+      doc.roundedRect(marginX, currentY, contentWidth, qBoxHeight, 2, 2, 'FD')
 
       // Left blue accent line
-      doc.setFillColor(66, 133, 244)
-      doc.rect(18, currentY, 2.5, qBoxHeight, 'F')
+      doc.setFillColor(37, 99, 235)
+      doc.rect(marginX, currentY, 2.5, qBoxHeight, 'F')
 
       doc.setTextColor(55, 65, 81)
       let qY = currentY + 4.8
       for (const ql of wrappedQuote) {
-        doc.text(ql, 23, qY)
+        doc.text(ql, marginX + 5, qY)
         qY += 4.6
       }
       currentY += qBoxHeight + 4
@@ -275,16 +271,16 @@ function renderMarkdownContent(
       currentY += 2
       doc.setFont('helvetica', 'bold')
       doc.setFontSize(13.5)
-      doc.setTextColor(24, 28, 36)
+      doc.setTextColor(15, 23, 42)
       const hText = trimmed.slice(2).replace(/\*\*(.*?)\*\*/g, '$1')
       const hLines = doc.splitTextToSize(hText, contentWidth)
       for (const hl of hLines) {
-        doc.text(hl, 18, currentY + 4)
+        doc.text(hl, marginX, currentY + 4)
         currentY += 6
       }
       // Accent underline
-      doc.setFillColor(66, 133, 244)
-      doc.rect(18, currentY + 1, 35, 1, 'F')
+      doc.setFillColor(37, 99, 235)
+      doc.rect(marginX, currentY + 1, 35, 1, 'F')
       currentY += 4
       continue
     }
@@ -295,11 +291,11 @@ function renderMarkdownContent(
       currentY += 1.5
       doc.setFont('helvetica', 'bold')
       doc.setFontSize(11.5)
-      doc.setTextColor(30, 35, 45)
+      doc.setTextColor(30, 41, 59)
       const hText = trimmed.slice(3).replace(/\*\*(.*?)\*\*/g, '$1')
       const hLines = doc.splitTextToSize(hText, contentWidth)
       for (const hl of hLines) {
-        doc.text(hl, 18, currentY + 3.5)
+        doc.text(hl, marginX, currentY + 3.5)
         currentY += 5.5
       }
       currentY += 2
@@ -312,11 +308,11 @@ function renderMarkdownContent(
       currentY += 1
       doc.setFont('helvetica', 'bold')
       doc.setFontSize(10.5)
-      doc.setTextColor(45, 52, 65)
+      doc.setTextColor(51, 65, 85)
       const hText = trimmed.slice(4).replace(/\*\*(.*?)\*\*/g, '$1')
       const hLines = doc.splitTextToSize(hText, contentWidth)
       for (const hl of hLines) {
-        doc.text(hl, 18, currentY + 3)
+        doc.text(hl, marginX, currentY + 3)
         currentY += 5
       }
       currentY += 1.5
@@ -335,19 +331,19 @@ function renderMarkdownContent(
 
       // Draw numbered badge
       doc.setFillColor(235, 243, 255)
-      doc.roundedRect(18, currentY + 0.5, 6, 4.4, 1.2, 1.2, 'F')
+      doc.roundedRect(marginX, currentY + 0.5, 6, 4.4, 1.2, 1.2, 'F')
       doc.setFont('helvetica', 'bold')
       doc.setFontSize(7.5)
       doc.setTextColor(37, 99, 235)
-      doc.text(numStr, 21, currentY + 3.6, { align: 'center' })
+      doc.text(numStr, marginX + 3, currentY + 3.6, { align: 'center' })
 
       // Text body
       doc.setFont('helvetica', 'normal')
       doc.setFontSize(9.5)
-      doc.setTextColor(33, 37, 41)
+      doc.setTextColor(30, 41, 59)
       let nY = currentY + 3.6
       for (let ni = 0; ni < numLines.length; ni++) {
-        doc.text(numLines[ni], 26, nY)
+        doc.text(numLines[ni], marginX + 8, nY)
         nY += 4.8
       }
       currentY += numLines.length * 4.8 + 1.5
@@ -359,18 +355,18 @@ function renderMarkdownContent(
       const bText = trimmed.slice(2).replace(/\*\*(.*?)\*\*/g, '$1')
       doc.setFont('helvetica', 'normal')
       doc.setFontSize(9.5)
-      doc.setTextColor(33, 37, 41)
+      doc.setTextColor(30, 41, 59)
 
       const bLines = doc.splitTextToSize(bText, contentWidth - 8)
       ensureSpace(bLines.length * 4.8 + 2)
 
       // Draw custom accent bullet dot
-      doc.setFillColor(66, 133, 244)
-      doc.circle(20, currentY + 2.5, 0.9, 'F')
+      doc.setFillColor(37, 99, 235)
+      doc.circle(marginX + 2, currentY + 2.5, 0.9, 'F')
 
       let bY = currentY + 3.6
       for (const bl of bLines) {
-        doc.text(bl, 24, bY)
+        doc.text(bl, marginX + 6, bY)
         bY += 4.8
       }
       currentY += bLines.length * 4.8 + 1.2
@@ -380,7 +376,7 @@ function renderMarkdownContent(
     // 11. Standard paragraph text
     doc.setFont('helvetica', 'normal')
     doc.setFontSize(9.5)
-    doc.setTextColor(33, 37, 41)
+    doc.setTextColor(30, 41, 59)
 
     // Clean inline bold markers if simple
     const cleanedText = rawLine.replace(/\*\*(.*?)\*\*/g, '$1')
@@ -389,7 +385,7 @@ function renderMarkdownContent(
 
     let pY = currentY + 3.4
     for (const pl of pLines) {
-      doc.text(pl, 18, pY)
+      doc.text(pl, marginX, pY)
       pY += 4.8
     }
     currentY += pLines.length * 4.8 + 1.5
@@ -413,7 +409,7 @@ export async function generateResponsePdf(
 
   const pageWidth = doc.internal.pageSize.getWidth()
   const pageHeight = doc.internal.pageSize.getHeight()
-  const contentWidth = pageWidth - 36 // 18mm margins
+  const contentWidth = pageWidth - 40 // 20mm margins on left and right
   const maxY = pageHeight - 20
 
   const title = options.title || 'Conversation Response'
@@ -430,25 +426,39 @@ export async function generateResponsePdf(
 
   let currentY = drawHeader(doc, title, model, dateStr)
 
-  // Optional User Prompt context box
+  // User Query context box (clean styled callout)
   if (options.prompt && options.prompt.trim()) {
-    doc.setFillColor(245, 247, 250)
-    doc.setDrawColor(215, 225, 240)
+    const promptText = options.prompt.trim()
+    const promptLines = doc.splitTextToSize(promptText, contentWidth - 14)
+    const promptBoxHeight = promptLines.length * 4.6 + 10
+
+    doc.setFillColor(248, 250, 252)
+    doc.setDrawColor(226, 232, 240)
     doc.setLineWidth(0.3)
+    doc.roundedRect(20, currentY, contentWidth, promptBoxHeight, 2, 2, 'FD')
 
-    const promptLines = doc.splitTextToSize(`Prompt: ${options.prompt.trim()}`, contentWidth - 8)
-    const promptBoxHeight = promptLines.length * 4.8 + 6
+    // Left blue accent stripe
+    doc.setFillColor(37, 99, 235)
+    doc.rect(20, currentY, 2.5, promptBoxHeight, 'F')
 
-    doc.roundedRect(18, currentY, contentWidth, promptBoxHeight, 2, 2, 'FD')
-    doc.setFont('helvetica', 'italic')
+    doc.setFont('helvetica', 'bold')
+    doc.setFontSize(8.5)
+    doc.setTextColor(37, 99, 235)
+    doc.text('User Query', 25, currentY + 5)
+
+    doc.setFont('helvetica', 'normal')
     doc.setFontSize(9)
-    doc.setTextColor(70, 75, 85)
-    doc.text(promptLines, 22, currentY + 5)
+    doc.setTextColor(51, 65, 85)
+    let pY = currentY + 9.5
+    for (const pl of promptLines) {
+      doc.text(pl, 25, pY)
+      pY += 4.6
+    }
 
     currentY += promptBoxHeight + 6
   }
 
-  // Render markdown response body with code blocks and headers
+  // Render markdown response body with code blocks, tables, and headers
   renderMarkdownContent(doc, content, currentY, contentWidth, maxY)
 
   // Draw running footers with total page count
@@ -486,7 +496,7 @@ export async function generateConversationPdf(
 
   const pageWidth = doc.internal.pageSize.getWidth()
   const pageHeight = doc.internal.pageSize.getHeight()
-  const contentWidth = pageWidth - 36 // 18mm margins
+  const contentWidth = pageWidth - 40 // 20mm margins on left and right
   const maxY = pageHeight - 20
 
   const title = options.title || 'Complete Chat Thread'
@@ -510,8 +520,8 @@ export async function generateConversationPdf(
       const ensureSpace = (needed: number) => {
         if (currentY + needed > maxY) {
           doc.addPage()
-          doc.setFillColor(66, 133, 244)
-          doc.rect(0, 0, pageWidth, 3, 'F')
+          doc.setFillColor(37, 99, 235)
+          doc.rect(0, 0, pageWidth, 2.5, 'F')
           currentY = 20
         }
       }
@@ -522,26 +532,30 @@ export async function generateConversationPdf(
 
       doc.setFont('helvetica', 'normal')
       doc.setFontSize(9.5)
-      const textLines = doc.splitTextToSize(msg.content, contentWidth - 10)
+      const textLines = doc.splitTextToSize(msg.content, contentWidth - 12)
       const boxHeight = textLines.length * 4.8 + 10
       ensureSpace(boxHeight + 5)
 
-      doc.setFillColor(243, 246, 252)
-      doc.setDrawColor(218, 226, 240)
+      doc.setFillColor(248, 250, 252)
+      doc.setDrawColor(226, 232, 240)
       doc.setLineWidth(0.3)
-      doc.roundedRect(18, currentY, contentWidth, boxHeight, 2, 2, 'FD')
+      doc.roundedRect(20, currentY, contentWidth, boxHeight, 2, 2, 'FD')
+
+      // Left blue accent stripe
+      doc.setFillColor(37, 99, 235)
+      doc.rect(20, currentY, 2.5, boxHeight, 'F')
 
       doc.setFont('helvetica', 'bold')
-      doc.setFontSize(9)
-      doc.setTextColor(30, 80, 160)
-      doc.text(`User${timeLabel}:`, 22, currentY + 5)
+      doc.setFontSize(8.5)
+      doc.setTextColor(37, 99, 235)
+      doc.text(`User${timeLabel}:`, 25, currentY + 5)
 
       doc.setFont('helvetica', 'normal')
       doc.setFontSize(9.5)
-      doc.setTextColor(33, 37, 41)
+      doc.setTextColor(30, 41, 59)
       let lineY = currentY + 9.5
       for (const line of textLines) {
-        doc.text(line, 22, lineY)
+        doc.text(line, 25, lineY)
         lineY += 4.8
       }
 
@@ -549,8 +563,8 @@ export async function generateConversationPdf(
     } else if (msg.role === 'assistant') {
       if (currentY + 12 > maxY) {
         doc.addPage()
-        doc.setFillColor(66, 133, 244)
-        doc.rect(0, 0, pageWidth, 3, 'F')
+        doc.setFillColor(37, 99, 235)
+        doc.rect(0, 0, pageWidth, 2.5, 'F')
         currentY = 20
       }
 
@@ -560,8 +574,8 @@ export async function generateConversationPdf(
 
       doc.setFont('helvetica', 'bold')
       doc.setFontSize(9.5)
-      doc.setTextColor(66, 133, 244)
-      doc.text(`Helfen.AI (${msg.model || model})${timeLabel}`, 18, currentY + 4)
+      doc.setTextColor(37, 99, 235)
+      doc.text(`Helfen.AI (${msg.model || model})${timeLabel}`, 20, currentY + 4)
       currentY += 6
 
       currentY = renderMarkdownContent(doc, msg.content, currentY, contentWidth, maxY)
@@ -570,9 +584,9 @@ export async function generateConversationPdf(
       // Divider line between conversation turns if not the last
       if (idx < messages.length - 1) {
         if (currentY + 6 <= maxY) {
-          doc.setDrawColor(230, 235, 245)
+          doc.setDrawColor(226, 232, 240)
           doc.setLineWidth(0.3)
-          doc.line(18, currentY, pageWidth - 18, currentY)
+          doc.line(20, currentY, pageWidth - 20, currentY)
           currentY += 6
         }
       }
@@ -589,4 +603,3 @@ export async function generateConversationPdf(
   const filename = `helfen-thread-${sanitizedTitle}-${Date.now().toString().slice(-4)}.pdf`
   doc.save(filename)
 }
-

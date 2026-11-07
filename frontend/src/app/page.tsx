@@ -31,13 +31,13 @@ const SUGGESTIONS = [
 export default function Home() {
   const {
     theme, toggleTheme, sidebarOpen, setSidebarOpen,
-    activeConversationId, setMessages, messages,
+    activeConversationId, setActiveConversationId, setMessages, messages,
     voiceEnabled, setVoiceEnabled, isTemporaryChat, setIsTemporaryChat,
     setAnnotations, conversations, selectedModel,
     continuationParentId, continuationParentTitle,
     setIsContextModalOpen, startNewChatWithContinuation, setContinuationParent,
     currentUser, userProfile, setCurrentUser, setUserProfile, setIsAuthModalOpen,
-    openShareModal
+    openShareModal, clearContinuationParent
   } = useAppStore()
 
   const [isAccountOpen, setIsAccountOpen] = useState(false)
@@ -143,15 +143,33 @@ export default function Home() {
         {/* ── TOP BAR ── */}
         <header className="topbar fade-in">
           <div className="topbar-left">
-            {/* Hamburger — only visible when sidebar is collapsed */}
+            {/* Hamburger & Logo — visible when sidebar is collapsed */}
             {!sidebarOpen && (
-              <button
-                className="icon-btn"
-                onClick={() => setSidebarOpen(true)}
-                title="Open sidebar"
-              >
-                <Menu size={20} />
-              </button>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <button
+                  className="icon-btn"
+                  onClick={() => setSidebarOpen(true)}
+                  title="Open sidebar"
+                >
+                  <Menu size={20} />
+                </button>
+                <div
+                  className="sidebar-brand"
+                  onClick={() => {
+                    setActiveConversationId(null)
+                    setMessages([])
+                    setIsTemporaryChat(false)
+                    clearContinuationParent()
+                  }}
+                  style={{ cursor: 'pointer', padding: '2px 4px' }}
+                  title="Go to Home"
+                >
+                  <div className="sidebar-brand-icon" style={{ width: 26, height: 26 }}>
+                    <Sparkles size={13} color="white" />
+                  </div>
+                  <span className="sidebar-brand-name" style={{ fontSize: '15px' }}>Helfen AI</span>
+                </div>
+              </div>
             )}
             {isTemporaryChat && (
               <div className="topbar-temp-badge fade-in">

@@ -164,7 +164,17 @@ export function Sidebar() {
     <aside className="sidebar fade-in">
       {/* ── HEADER ── */}
       <div className="sidebar-header">
-        <div className="sidebar-brand">
+        <div
+          className="sidebar-brand"
+          onClick={() => {
+            setActiveConversationId(null)
+            setMessages([])
+            setIsTemporaryChat(false)
+            clearContinuationParent()
+          }}
+          style={{ cursor: 'pointer' }}
+          title="Go to Home"
+        >
           <div className="sidebar-brand-icon">
             <Sparkles size={14} color="white" />
           </div>

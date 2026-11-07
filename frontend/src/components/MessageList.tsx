@@ -364,12 +364,7 @@ export function MessageList() {
         createdAt: msg.created_at
       })
       toast.success('PDF generated and downloaded!', {
-        icon: '📄',
-        style: {
-          background: 'var(--bg-card)',
-          color: 'var(--text-primary)',
-          border: '1px solid var(--border)'
-        }
+        icon: '📄'
       })
     } catch (err) {
       console.error('Failed to generate PDF:', err)
